@@ -18,7 +18,10 @@ export class LogsService {
     ) {}
 
     async getInferenceLogs(): Promise<InferenceLogEntity[]> {
-        return this.inferenceLogRepo.find({ relations: ['error'] });
+        return this.inferenceLogRepo.find({ 
+            relations: ['error'], 
+            order: { timestamp: 'DESC' } 
+        });
     }
 
     async getInferenceErrors(): Promise<InferenceErrorEntity[]> {
@@ -36,6 +39,7 @@ export class LogsService {
                     duration: true,
                 },
             },
+            order: { inference_log: { timestamp: 'DESC' } },
         });
     }
 }
