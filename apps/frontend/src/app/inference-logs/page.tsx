@@ -1,9 +1,10 @@
+import InferenceLogsTable from '../components/InferenceLogsTable';
+import { getInferenceLogs } from '../../services';
+
 export const metadata = {
     title: 'Inference Logs | Tanaos Cognitor',
     description: 'Browse and filter all inference logs for your models.'
 };
-import InferenceLogsTable from '../components/InferenceLogsTable';
-import { getInferenceLogs } from '../../services';
 
 
 interface Props {

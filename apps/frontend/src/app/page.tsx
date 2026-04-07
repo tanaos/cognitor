@@ -1,7 +1,3 @@
-export const metadata = {
-    title: 'Dashboard | Tanaos Cognitor',
-    description: 'Overview of Cognitor metrics, charts, and recent activity.'
-};
 import { Suspense } from 'react';
 
 import Spinner from './components/Spinner';
@@ -15,6 +11,11 @@ import {
     getInferenceLogs,
     getInferenceErrors,
 } from '../services';
+
+export const metadata = {
+    title: 'Dashboard | Tanaos Cognitor',
+    description: 'Overview of Cognitor metrics, charts, and recent activity.'
+};
 
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ period?: string; from?: string; to?: string }> }) {

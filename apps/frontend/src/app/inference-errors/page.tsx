@@ -1,10 +1,11 @@
+import Badge from '../components/Badge';
+import Table from '../components/Table';
+import { getInferenceErrors } from '../../services';
+
 export const metadata = {
     title: 'Inference Errors | Tanaos Cognitor',
     description: 'View and analyze all inference errors detected in your models.'
 };
-import Badge from '../components/Badge';
-import Table from '../components/Table';
-import { getInferenceErrors } from '../../services';
 
 
 export default async function InferenceErrorsPage() {
