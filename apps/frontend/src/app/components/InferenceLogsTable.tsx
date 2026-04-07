@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
+import Link from 'next/link';
 
 import Badge from './Badge';
 import StatCard from './StatCard';
@@ -10,16 +11,19 @@ import tableStyles from './Table.module.css';
 import type { InferenceLogRecord } from '@cognitor/shared';
 
 
-export default function InferenceLogsTable({ logs, initialModel, initialDate }: {
+export default function InferenceLogsTable({ logs, initialModel, initialDate, initialLogId }: {
     logs: InferenceLogRecord[];
     initialModel?: string;
     initialDate?: string;
+    initialLogId?: number;
 }) {
     const models = Array.from(new Set(logs.map((l) => l.model_name)));
     const [modelFilter, setModelFilter] = useState(initialModel ?? 'all');
     const [minDuration, setMinDuration] = useState('');
     const [dateFilter, setDateFilter] = useState(initialDate ?? '');
     const [expanded, setExpanded] = useState<number | null>(null);
+    const [highlightedId, setHighlightedId] = useState<number | undefined>(initialLogId);
+    const highlightedRowRef = useRef<HTMLTableRowElement | null>(null);
 
     const filtered = logs.filter((l) => {
         if (modelFilter !== 'all' && l.model_name !== modelFilter) return false;
@@ -38,6 +42,24 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
     const avgTokenDuration = tokenDurationRatios.length
         ? tokenDurationRatios.reduce((a, b) => a + b, 0) / tokenDurationRatios.length
         : 0;
+
+    useEffect(() => {
+        if (initialLogId == null) return;
+        const idx = filtered.findIndex((l) => l.id === initialLogId);
+        if (idx !== -1) setExpanded(idx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        highlightedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, [expanded]);
+
+    useEffect(() => {
+        if (highlightedId == null) return;
+        const handler = () => setHighlightedId(undefined);
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, [highlightedId]);
 
     return (
         <div>
@@ -109,11 +131,24 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
                         {filtered.map((log, i) => (
                             <Fragment key={i}>
                                 <tr
+                                    ref={log.id === highlightedId ? highlightedRowRef : null}
                                     onClick={() => setExpanded(expanded === i ? null : i)}
-                                    className={`${styles.row} ${expanded === i ? styles.rowExpanded : ''}`}
+                                    className={`${styles.row} ${expanded === i ? styles.rowExpanded : ''} ${log.id === highlightedId ? styles.highlighted : ''}`}
                                 >
                                     <td className={styles.expandToggle}>
-                                        <i className={`bi ${expanded === i ? 'bi-chevron-down' : 'bi-chevron-right'}`} />
+                                        <div className={styles.expandToggleInner}>
+                                            <i className={`bi ${expanded === i ? 'bi-chevron-down' : 'bi-chevron-right'}`} />
+                                            {log.error && (
+                                                <Link
+                                                    href={`/inference-errors?errorId=${log.error.id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className={styles.errorIcon}
+                                                    title='View error details'
+                                                >
+                                                    <i className='bi bi-exclamation-circle-fill' />
+                                                </Link>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className={styles.cellNoWrap}>{new Date(log.timestamp).toLocaleString()}</td>
                                     <td className={tableStyles.cell}>

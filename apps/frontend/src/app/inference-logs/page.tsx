@@ -8,7 +8,7 @@ export const metadata = {
 
 
 interface Props {
-    searchParams: Promise<{ model?: string; date?: string }>;
+    searchParams: Promise<{ model?: string; date?: string; logId?: string }>;
 }
 
 export default async function InferenceLogsPage({ searchParams }: Props) {
@@ -24,7 +24,12 @@ export default async function InferenceLogsPage({ searchParams }: Props) {
 
             {error && <div className='error-banner'>{error}</div>}
 
-            <InferenceLogsTable logs={logs ?? []} initialModel={params.model} initialDate={params.date} />
+            <InferenceLogsTable
+                logs={logs ?? []}
+                initialModel={params.model}
+                initialDate={params.date}
+                initialLogId={params.logId ? parseInt(params.logId, 10) : undefined}
+            />
         </div>
     );
 }

@@ -73,7 +73,32 @@
     padding: 10px 16px;
     color: var(--font-color-light);
     font-size: 13px;
-    width: 24px;
+    white-space: nowrap;
+}
+
+.expandToggleInner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.errorIcon {
+    color: var(--danger);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.errorIcon:hover {
+    opacity: 0.75;
+}
+
+.highlighted {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 .cellNoWrap {

@@ -1,5 +1,4 @@
-import Badge from '../components/Badge';
-import Table from '../components/Table';
+import InferenceErrorsTable from '../components/InferenceErrorsTable';
 import { getInferenceErrors } from '../../services';
 
 export const metadata = {
@@ -7,8 +6,12 @@ export const metadata = {
     description: 'View and analyze all inference errors detected in your models.'
 };
 
+interface Props {
+    searchParams: Promise<{ errorId?: string }>;
+}
 
-export default async function InferenceErrorsPage() {
+export default async function InferenceErrorsPage({ searchParams }: Props) {
+    const params = await searchParams;
     const { data: logs, error } = await getInferenceErrors();
 
     return (
@@ -20,17 +23,10 @@ export default async function InferenceErrorsPage() {
 
             {error && <div className="error-banner">{error}</div>}
 
-            <div className="table-card">
-                <Table
-                    columns={['Timestamp', 'Model', 'Exception Type', 'Message']}
-                    rows={(logs ?? []).map((log) => [
-                        log.inference_log ? new Date(log.inference_log.timestamp).toLocaleString() : '—',
-                        log.inference_log?.model_name ?? '—',
-                        <Badge key="type" label={log.exception_type ?? 'unknown'} variant="danger" />,
-                        log.error_message,
-                    ])}
-                />
-            </div>
+            <InferenceErrorsTable
+                errors={logs ?? []}
+                initialErrorId={params.errorId ? parseInt(params.errorId, 10) : undefined}
+            />
         </div>
     );
 }
