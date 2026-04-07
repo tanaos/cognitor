@@ -18,7 +18,7 @@ import { InferenceErrorEntity } from './logs/inference-error.entity';
             password: process.env.DB_PASSWORD ?? 'cognitorpassword',
             database: process.env.DB_NAME ?? 'cognitor',
             entities: [InferenceLogEntity, InferenceErrorEntity],
-            synchronize: false,
+            synchronize: true,
         }),
         LogsModule,
     ],
