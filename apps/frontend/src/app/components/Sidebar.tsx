@@ -21,7 +21,7 @@ export default function Sidebar() {
             <div className={styles.brand}>
                 <Link href='/' className={styles.brandLink}>
                     <Image src='/logo.png' alt='Tanaos logo' width={28} height={28} />
-                    <span className={styles.brandName}>Cognitor by Tanaos</span>
+                    <span className={styles.brandName}>Cognitor</span> <span className={styles.brandOther}>by Tanaos</span>
                 </Link>
             </div>
             <nav className={styles.nav}>

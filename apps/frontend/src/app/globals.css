@@ -31,9 +31,9 @@ body {
 }
 
 .main-content {
-    flex: 1;
+    margin-left: 220px;
     padding: 2rem;
-    overflow-y: auto;
+    min-height: 100vh;
 }
 
 /* ─── Shared page-level styles ─── */
