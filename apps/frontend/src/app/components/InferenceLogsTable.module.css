@@ -47,6 +47,7 @@
 
 /* Table wrapper (card shell) */
 .tableWrapper {
+    width: 100%;
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 12px;

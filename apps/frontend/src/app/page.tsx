@@ -14,22 +14,19 @@ import PeriodFilter from './components/PeriodFilter';
 import {
     getInferenceLogs,
     getInferenceErrors,
-    getDailyInferenceAggregates,
 } from '../services';
 
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ period?: string; from?: string; to?: string }> }) {
     const { period = 'all', from: fromParam, to: toParam } = await searchParams;
 
-    const [inferenceResult, errorsResult, aggregatesResult] = await Promise.all([
+    const [inferenceResult, errorsResult] = await Promise.all([
         getInferenceLogs(),
         getInferenceErrors(),
-        getDailyInferenceAggregates(),
     ]);
 
     const allInferenceLogs = inferenceResult.data ?? [];
     const allInferenceErrors = errorsResult.data ?? [];
-    const allAggregates = aggregatesResult.data ?? [];
 
     // Compute date bounds
     const now = new Date();
@@ -48,9 +45,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         else if (period === '30d') fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    const fromDateStr = fromDate ? fromDate.toISOString().split('T')[0] : null;
-    const toDateStr = toDate ? toDate.toISOString().split('T')[0] : null;
-
     const inferenceLogs = allInferenceLogs.filter((l: any) => {
         const t = new Date(l.timestamp);
         if (fromDate && t < fromDate) return false;
@@ -63,15 +57,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         if (toDate && t > toDate) return false;
         return true;
     });
-    const aggregates = allAggregates.filter((a: any) => {
-        if (fromDateStr && a.date < fromDateStr) return false;
-        if (toDateStr && a.date > toDateStr) return false;
-        return true;
-    });
-    const latestAggregate = aggregates[aggregates.length - 1];
+
+    // Aggregate stats computed from raw logs
     const errorRate = inferenceLogs.length > 0
         ? ((inferenceErrors.length / inferenceLogs.length) * 100).toFixed(1)
         : '0.0';
+
+    const avgDuration = inferenceLogs.length > 0
+        ? inferenceLogs.reduce((sum: number, l: any) => sum + (l.duration ?? 0), 0) / inferenceLogs.length
+        : null;
+
+    const avgCpu = inferenceLogs.length > 0
+        ? inferenceLogs.reduce((sum: number, l: any) => sum + (l.cpu_percent ?? 0), 0) / inferenceLogs.length
+        : null;
+
+    const avgRam = inferenceLogs.length > 0
+        ? inferenceLogs.reduce((sum: number, l: any) => sum + (l.ram_usage_percent ?? 0), 0) / inferenceLogs.length
+        : null;
 
     // Chart data
     const durationData = inferenceLogs.map((l: any) => ({
@@ -86,15 +88,30 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         ram: l.ram_usage_percent,
     }));
 
-    const modelUsageData = latestAggregate?.model_usage_breakdown
-        ? Object.entries(latestAggregate.model_usage_breakdown).map(([model, count]) => ({ model, count }))
-        : [];
+    // Model usage: count inferences per model
+    const modelCounts: Record<string, number> = {};
+    for (const l of inferenceLogs as any[]) {
+        const name = l.model_name ?? 'unknown';
+        modelCounts[name] = (modelCounts[name] ?? 0) + 1;
+    }
+    const modelUsageData = Object.entries(modelCounts).map(([model, count]) => ({ model, count }));
 
-    const errorRateData = aggregates.map((a: any) => ({
-        date: a.date,
-        errorRate: a.total_inferences > 0
-            ? (inferenceErrors.filter((e: any) => e.inference_log?.timestamp?.startsWith(a.date)).length / a.total_inferences) * 100
-            : 0,
+    // Error rate per day derived from log timestamps
+    const dayTotals: Record<string, number> = {};
+    const dayErrors: Record<string, number> = {};
+    for (const l of inferenceLogs as any[]) {
+        const date = l.timestamp?.split('T')[0] ?? '';
+        if (!date) continue;
+        dayTotals[date] = (dayTotals[date] ?? 0) + 1;
+    }
+    for (const e of inferenceErrors as any[]) {
+        const date = e.inference_log?.timestamp?.split('T')[0] ?? '';
+        if (!date) continue;
+        dayErrors[date] = (dayErrors[date] ?? 0) + 1;
+    }
+    const errorRateData = Object.keys(dayTotals).sort().map((date) => ({
+        date,
+        errorRate: ((dayErrors[date] ?? 0) / dayTotals[date]) * 100,
     }));
 
     return (
@@ -112,61 +129,37 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <PeriodFilter current={period} currentFrom={fromParam} currentTo={toParam} />
             </Suspense>
 
-            {/* Stat cards */}
             <div className='stat-row'>
                 <StatCard label='Total Inferences' value={inferenceLogs.length} />
                 <StatCard label='Inference Errors' value={inferenceErrors.length} />
                 <StatCard label='Error Rate' value={`${errorRate}%`} />
-                {latestAggregate && (
-                    <>
-                        <StatCard
-                            label='Avg Inference Duration'
-                            value={`${latestAggregate.avg_inference_duration_seconds?.toFixed(3)}s`}
-                            sub={`Latest: ${latestAggregate.date}`}
-                        />
-                        <StatCard
-                            label='Avg CPU Usage'
-                            value={`${latestAggregate.avg_cpu_usage_percent?.toFixed(1)}%`}
-                            sub={`Latest: ${latestAggregate.date}`}
-                        />
-                        <StatCard
-                            label='Avg RAM Usage'
-                            value={`${latestAggregate.avg_ram_usage_percent?.toFixed(1)}%`}
-                            sub={`Latest: ${latestAggregate.date}`}
-                        />
-                        {latestAggregate.avg_confidence_score != null && (
-                            <StatCard
-                                label='Avg Confidence'
-                                value={latestAggregate.avg_confidence_score.toFixed(3)}
-                                sub={`Latest: ${latestAggregate.date}`}
-                            />
-                        )}
-                    </>
+                {avgDuration !== null && (
+                    <StatCard label='Avg Inference Duration' value={`${avgDuration.toFixed(3)}s`} />
+                )}
+                {avgCpu !== null && (
+                    <StatCard label='Avg CPU Usage' value={`${avgCpu.toFixed(1)}%`} />
+                )}
+                {avgRam !== null && (
+                    <StatCard label='Avg RAM Usage' value={`${avgRam.toFixed(1)}%`} />
                 )}
             </div>
 
-            {/* Charts section */}
             {durationData.length === 0 && resourceData.length === 0 && modelUsageData.length === 0 && errorRateData.length === 0 ? (
                 <div style={{ textAlign: 'center', margin: '2rem 0', fontSize: '1.2rem', color: '#888' }}>
                     No data to display for this interval
                 </div>
             ) : (
                 <>
-                    {/* Charts row 1 */}
                     <div className='charts-grid'>
                         <DurationChart data={durationData} />
                         <ResourceChart data={resourceData} />
                     </div>
-
-                    {/* Charts row 2 */}
                     <div className='charts-grid'>
-                        <ModelUsageChart data={modelUsageData as any} />
+                        <ModelUsageChart data={modelUsageData} />
                         <ErrorRateChart data={errorRateData} />
                     </div>
-
                 </>
             )}
         </div>
     );
 }
-
