@@ -1,5 +1,4 @@
 import type {
-    DailyInferenceAggregateLogEntry,
     InferenceLogRecord,
     InferenceErrorRecord,
 } from '@cognitor/shared';
@@ -28,10 +27,6 @@ export async function getInferenceLogs(): Promise<FetchResult<InferenceLogRecord
 
 export async function getInferenceErrors(): Promise<FetchResult<InferenceErrorRecord[]>> {
     return fetchLogs<InferenceErrorRecord[]>('/logs/inference-errors');
-}
-
-export async function getDailyInferenceAggregates(): Promise<FetchResult<DailyInferenceAggregateLogEntry[]>> {
-    return fetchLogs<DailyInferenceAggregateLogEntry[]>('/logs/daily-inference-aggregates');
 }
 
 
