@@ -101,12 +101,17 @@
 
 .detailCell {
     padding: 0 1rem 1rem 3rem;
+    max-width: 0;
 }
 
 .detailGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+}
+
+.detailGrid > div {
+    min-width: 0;
 }
 
 .detailLabel {

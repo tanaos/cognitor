@@ -29,6 +29,7 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
     });
 
     const durations = filtered.map((l) => l.duration).sort((a, b) => a - b);
+    const p90 = durations[Math.floor(durations.length * 0.90)] ?? 0;
     const p95 = durations[Math.floor(durations.length * 0.95)] ?? 0;
     const p99 = durations[Math.floor(durations.length * 0.99)] ?? 0;
     const tokenDurationRatios = filtered
@@ -43,6 +44,7 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
             {/* Derived metrics */}
             <div className={styles.metricsRow}>
                 <StatCard label='Filtered entries' value={filtered.length} />
+                <StatCard label='P90 Latency' value={`${p90.toFixed(4)}s`} />
                 <StatCard label='P95 Latency' value={`${p95.toFixed(4)}s`} />
                 <StatCard label='P99 Latency' value={`${p99.toFixed(4)}s`} />
                 <StatCard label='Avg Tokens/s' value={avgTokenDuration.toFixed(2)} />
@@ -89,7 +91,7 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
                 <table className={tableStyles.table}>
                     <thead>
                         <tr className={tableStyles.headRow}>
-                            {['', 'Timestamp', 'Model', 'Duration (s)', 'CPU %', 'RAM %', 'Input Tokens'].map((col) => (
+                            {['', 'Timestamp', 'Model', 'Duration (s)', 'CPU %', 'RAM %', 'CPU Δ', 'RAM Δ', 'Input Tokens', 'Output Tokens', 'Tokens/s'].map((col) => (
                                 <th key={col} className={tableStyles.headCell}>
                                     {col}
                                 </th>
@@ -99,7 +101,7 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
                     <tbody>
                         {filtered.length === 0 && (
                             <tr>
-                                <td colSpan={7} className={tableStyles.empty}>
+                                <td colSpan={11} className={tableStyles.empty}>
                                     No entries match the current filters.
                                 </td>
                             </tr>
@@ -124,11 +126,15 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate }: 
                                     </td>
                                     <td className={tableStyles.cell}>{log.cpu_percent?.toFixed(1)}%</td>
                                     <td className={tableStyles.cell}>{log.ram_usage_percent?.toFixed(1)}%</td>
+                                    <td className={tableStyles.cell}>{log.cpu_delta?.toFixed(1)}%</td>
+                                    <td className={tableStyles.cell}>{log.ram_delta?.toFixed(1)}%</td>
                                     <td className={tableStyles.cell}>{log.input_tokens}</td>
+                                    <td className={tableStyles.cell}>{log.output_tokens}</td>
+                                    <td className={tableStyles.cell}>{log.tokens_per_second?.toFixed(2) ?? '—'}</td>
                                 </tr>
                                 {expanded === i && (
                                     <tr className={styles.detailRow}>
-                                        <td colSpan={7} className={styles.detailCell}>
+                                        <td colSpan={11} className={styles.detailCell}>
                                             <div className={styles.detailGrid}>
                                                 <div>
                                                     <div className={styles.detailLabel}>Input</div>
