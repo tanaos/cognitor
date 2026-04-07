@@ -77,14 +77,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         : null;
 
     // Chart data
-    const durationData = inferenceLogs.map((l: any) => ({
-        time: new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    const sortedLogs = [...inferenceLogs].sort((a: any, b: any) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const durationData = sortedLogs.map((l: any) => ({
+        time: new Date(l.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         duration: l.duration,
         model: l.model_name ?? 'unknown',
     }));
 
-    const resourceData = inferenceLogs.map((l: any) => ({
-        time: new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    const resourceData = sortedLogs.map((l: any) => ({
+        time: new Date(l.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         cpu: l.cpu_percent,
         ram: l.ram_usage_percent,
     }));

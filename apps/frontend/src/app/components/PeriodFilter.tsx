@@ -51,7 +51,7 @@ export default function PeriodFilter({
     }
 
     return (
-        <FilterBar justify="end">
+        <FilterBar justify="start">
             <div className={styles.inner}>
             <div className={styles.container}>
                 {PERIODS.map(p => (
