@@ -1,0 +1,9 @@
+// Monorepo root — not compiled directly.
+// Each app has its own tsconfig.json.
+{
+    "compilerOptions": {
+        "strict": true,
+        "skipLibCheck": true
+    },
+    "files": []
+}

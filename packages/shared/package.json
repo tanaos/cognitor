@@ -1,0 +1,25 @@
+{
+    "name": "@cognitor/shared",
+    "version": "1.0.0",
+    "description": "Shared types for the cognitor monorepo",
+    "private": true,
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5"
+    },
+    "dependencies": {
+        "zod": "^4.0.0"
+    }
+}

@@ -1,0 +1,126 @@
+/* Metrics row */
+.metricsRow {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.select,
+.inputText,
+.inputDate {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--font-color-dark);
+}
+
+.select {
+    cursor: pointer;
+}
+
+.inputText {
+    width: 160px;
+}
+
+.clearBtn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    cursor: pointer;
+    color: var(--font-color-light);
+}
+
+/* Table wrapper (card shell) */
+.tableWrapper {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Clickable rows */
+.row {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.row:hover,
+.rowExpanded {
+    background: var(--surface);
+}
+
+.rowExpanded {
+    border-bottom: none;
+}
+
+.expandToggle {
+    padding: 10px 16px;
+    color: var(--font-color-light);
+    font-size: 13px;
+    width: 24px;
+}
+
+.cellNoWrap {
+    padding: 10px 16px;
+    color: var(--font-color-dark);
+    white-space: nowrap;
+}
+
+.cellNumeric {
+    padding: 10px 16px;
+    font-variant-numeric: tabular-nums;
+    color: var(--font-color-dark);
+}
+
+.highlight {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* Expanded detail row */
+.detailRow {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.detailCell {
+    padding: 0 1rem 1rem 3rem;
+}
+
+.detailGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.detailLabel {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--font-color-light);
+    margin-bottom: 6px;
+}
+
+.pre {
+    background: #18181b;
+    color: #e4e4e7;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 11px;
+    overflow: auto;
+    max-height: 200px;
+}

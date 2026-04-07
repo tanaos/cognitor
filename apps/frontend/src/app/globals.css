@@ -1,0 +1,105 @@
+:root {
+    --primary: #FF3668;
+    --secondary: #F4F4F5;
+    --bg: #ffffff;
+    --surface: #F4F4F5;
+    --border: #e4e4e7;
+    --font-color-dark: #40454f;
+    --font-color-light: #787886;
+    --text: #40454f;
+    --text-muted: #787886;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #22c55e;
+}
+
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html,
+body {
+    max-width: 100vw;
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    color: var(--font-color-dark);
+    font-size: 14px;
+    display: flex;
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* ─── Shared page-level styles ─── */
+
+.page-title {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--font-color-dark);
+}
+
+.page-subtitle {
+    color: var(--font-color-light);
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.filter-row {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.page-header .page-title {
+    margin-bottom: 6px;
+}
+
+.page-header .page-subtitle {
+    margin-bottom: 0;
+}
+
+.error-banner {
+    background: #fee2e2;
+    color: var(--danger);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 13px;
+}
+
+.table-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.stat-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+
