@@ -28,15 +28,14 @@ body {
     background: var(--bg);
     color: var(--font-color-dark);
     font-size: 14px;
-    display: flex;
 }
 
 .main-content {
     margin-left: 220px;
     padding: 2rem;
     min-height: 100vh;
-    min-width: 0;
-    max-width: calc(100vw - 220px);
+    width: calc(100vw - 220px);
+    max-width: 100%;
 }
 
 /* ─── Shared page-level styles ─── */
@@ -94,8 +93,8 @@ body {
 
 .stat-row {
     display: flex;
-    gap: 1rem;
     flex-wrap: wrap;
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 
@@ -104,6 +103,13 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1rem;
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--font-color-dark);
+    margin: 2rem 0 1rem 0;
 }
 
 

@@ -6,10 +6,13 @@ import DurationChart from './components/DurationChart';
 import ResourceChart from './components/ResourceChart';
 import ModelUsageChart from './components/ModelUsageChart';
 import ErrorRateChart from './components/ErrorRateChart';
+import TrainingLossChart from './components/TrainingLossChart';
+import TrainingModelUsageChart from './components/TrainingModelUsageChart';
 import PeriodFilter from './components/PeriodFilter';
 import {
     getInferenceLogs,
     getInferenceErrors,
+    getTrainingLogs,
 } from '../services';
 
 export const metadata = {
@@ -21,13 +24,15 @@ export const metadata = {
 export default async function Home({ searchParams }: { searchParams: Promise<{ period?: string; from?: string; to?: string }> }) {
     const { period = 'all', from: fromParam, to: toParam } = await searchParams;
 
-    const [inferenceResult, errorsResult] = await Promise.all([
+    const [inferenceResult, errorsResult, trainingResult] = await Promise.all([
         getInferenceLogs(),
         getInferenceErrors(),
+        getTrainingLogs(),
     ]);
 
     const allInferenceLogs = inferenceResult.data ?? [];
     const allInferenceErrors = errorsResult.data ?? [];
+    const allTrainingLogs = trainingResult.data ?? [];
 
     // Compute date bounds
     const now = new Date();
@@ -58,6 +63,21 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         if (toDate && t > toDate) return false;
         return true;
     });
+
+    const trainingLogs = allTrainingLogs.filter((l: any) => {
+        if (!l.timestamp) return true;
+        const t = new Date(l.timestamp);
+        if (fromDate && t < fromDate) return false;
+        if (toDate && t > toDate) return false;
+        return true;
+    });
+
+    // Training derived stats
+    const trainingRuns = new Set(allTrainingLogs.map((l: any) => l.training_run_id).filter(Boolean)).size;
+    const trainLosses = trainingLogs.map((l: any) => l.train_loss).filter((v: any) => v != null) as number[];
+    const valLosses = trainingLogs.map((l: any) => l.val_loss).filter((v: any) => v != null) as number[];
+    const avgTrainLoss = trainLosses.length ? trainLosses.reduce((a, b) => a + b, 0) / trainLosses.length : null;
+    const avgValLoss = valLosses.length ? valLosses.reduce((a, b) => a + b, 0) / valLosses.length : null;
 
     // Aggregate stats computed from raw logs
     const errorRate = inferenceLogs.length > 0
@@ -119,6 +139,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         errorRate: ((dayErrors[date] ?? 0) / dayTotals[date]) * 100,
     }));
 
+    // Training chart data
+    const sortedTrainingLogs = [...trainingLogs]
+        .filter((l: any) => l.timestamp)
+        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const trainingLossData = sortedTrainingLogs.map((l: any) => ({
+        time: new Date(l.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        train_loss: l.train_loss ?? null,
+        val_loss: l.val_loss ?? null,
+    }));
+
+    const trainingModelCounts: Record<string, number> = {};
+    for (const l of trainingLogs as any[]) {
+        const name = l.model_name ?? 'unknown';
+        trainingModelCounts[name] = (trainingModelCounts[name] ?? 0) + 1;
+    }
+    const trainingModelData = Object.entries(trainingModelCounts).map(([model, runs]) => ({ model, runs }));
+
     return (
         <div>
             <div className='page-header'>
@@ -147,11 +185,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 {avgRam !== null && (
                     <StatCard label='Avg RAM Usage' value={`${avgRam.toFixed(1)}%`} />
                 )}
+                <StatCard label='Training Steps' value={trainingLogs.length} />
+                <StatCard label='Training Runs' value={trainingRuns} />
+                {avgTrainLoss !== null && (
+                    <StatCard label='Avg Train Loss' value={avgTrainLoss.toFixed(4)} />
+                )}
+                {avgValLoss !== null && (
+                    <StatCard label='Avg Val Loss' value={avgValLoss.toFixed(4)} />
+                )}
             </div>
 
             {durationData.length === 0 && resourceData.length === 0 && modelUsageData.length === 0 && errorRateData.length === 0 ? (
                 <div style={{ textAlign: 'center', margin: '2rem 0', fontSize: '1.2rem', color: '#888' }}>
-                    No data to display for this interval
+                    No inference data to display for this interval
                 </div>
             ) : (
                 <>
@@ -164,6 +210,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                         <ErrorRateChart data={errorRateData} />
                     </div>
                 </>
+            )}
+
+            {trainingLossData.length === 0 && trainingModelData.length === 0 ? (
+                <div style={{ textAlign: 'center', margin: '2rem 0', fontSize: '1.2rem', color: '#888' }}>
+                    No training data to display for this interval
+                </div>
+            ) : (
+                <div className='charts-grid'>
+                    <TrainingLossChart data={trainingLossData} />
+                    <TrainingModelUsageChart data={trainingModelData} />
+                </div>
             )}
         </div>
     );
