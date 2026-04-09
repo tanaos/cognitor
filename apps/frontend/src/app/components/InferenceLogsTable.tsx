@@ -9,6 +9,7 @@ import FilterBar from './FilterBar';
 import styles from './InferenceLogsTable.module.css';
 import tableStyles from './Table.module.css';
 import type { InferenceLogRecord } from '@cognitor/shared';
+import { formatTimestamp } from '../../utils/formatTimestamp';
 
 
 export default function InferenceLogsTable({ logs, initialModel, initialDate, initialLogId }: {
@@ -150,7 +151,7 @@ export default function InferenceLogsTable({ logs, initialModel, initialDate, in
                                             )}
                                         </div>
                                     </td>
-                                    <td className={styles.cellNoWrap}>{new Date(log.timestamp).toLocaleString()}</td>
+                                    <td className={styles.cellNoWrap}>{formatTimestamp(log.timestamp)}</td>
                                     <td className={tableStyles.cell}>
                                         <Badge label={log.model_name} />
                                     </td>

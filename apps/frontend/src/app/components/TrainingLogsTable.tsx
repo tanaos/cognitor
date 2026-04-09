@@ -8,6 +8,7 @@ import FilterBar from './FilterBar';
 import styles from './TrainingLogsTable.module.css';
 import tableStyles from './Table.module.css';
 import type { TrainingLogRecord } from '@cognitor/shared';
+import { formatTimestamp } from '../../utils/formatTimestamp';
 
 
 function fmt(v: number | null | undefined, decimals = 4): string {
@@ -117,7 +118,7 @@ export default function TrainingLogsTable({ logs }: { logs: TrainingLogRecord[] 
                                     <td className={styles.expandToggle}>
                                         <i className={`bi ${expanded === i ? 'bi-chevron-down' : 'bi-chevron-right'}`} />
                                     </td>
-                                    <td className={tableStyles.cell}>{log.timestamp ?? '—'}</td>
+                                    <td className={tableStyles.cell}>{formatTimestamp(log.timestamp)}</td>
                                     <td className={tableStyles.cell}>
                                         {log.model_name ? <Badge label={log.model_name} /> : '—'}
                                     </td>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatTimestamp } from '../../utils/formatTimestamp';
 
 import Badge from './Badge';
 import tableStyles from './Table.module.css';
@@ -57,7 +58,7 @@ export default function InferenceErrorsTable({
                             >
                                 <td className={tableStyles.cell}>
                                     {err.inference_log
-                                        ? new Date(err.inference_log.timestamp).toLocaleString()
+                                        ? formatTimestamp(err.inference_log.timestamp)
                                         : '—'}
                                 </td>
                                 <td className={tableStyles.cell}>
