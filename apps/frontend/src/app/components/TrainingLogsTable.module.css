@@ -1,0 +1,97 @@
+.metricsRow {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.select,
+.inputText,
+.inputDate {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--font-color-dark);
+}
+
+.select {
+    cursor: pointer;
+}
+
+.inputText {
+    width: 160px;
+}
+
+.clearBtn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    cursor: pointer;
+    color: var(--font-color-light);
+}
+
+.tableWrapper {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.row {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.row:hover,
+.rowExpanded {
+    background: var(--surface);
+}
+
+.rowExpanded {
+    border-bottom: none;
+}
+
+.expandToggle {
+    padding: 10px 16px;
+    color: var(--font-color-light);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.detailRow {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.detailContent {
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.5rem 1.5rem;
+}
+
+.detailItem {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detailLabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--font-color-light);
+}
+
+.detailValue {
+    font-size: 13px;
+    color: var(--font-color-dark);
+    word-break: break-word;
+}

@@ -11,6 +11,7 @@ const nav = [
     { href: '/', label: 'Dashboard', icon: 'bi bi-speedometer2' },
     { href: '/inference-logs', label: 'Inference Logs', icon: 'bi bi-list-columns' },
     { href: '/inference-errors', label: 'Inference Errors', icon: 'bi bi-exclamation-triangle' },
+    { href: '/training-logs', label: 'Training Logs', icon: 'bi bi-mortarboard' },
 ];
 
 export default function Sidebar() {
