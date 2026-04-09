@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import { InferenceLogEntity } from './inference-log.entity';
 import { InferenceErrorEntity } from './inference-error.entity';
+import { TrainingLogEntity } from './training-log.entity';
 
 
 @Injectable()
@@ -15,6 +16,9 @@ export class LogsService {
 
         @InjectRepository(InferenceErrorEntity)
         private readonly inferenceErrorRepo: Repository<InferenceErrorEntity>,
+
+        @InjectRepository(TrainingLogEntity)
+        private readonly trainingLogRepo: Repository<TrainingLogEntity>,
     ) {}
 
     async getInferenceLogs(): Promise<InferenceLogEntity[]> {
@@ -22,6 +26,10 @@ export class LogsService {
             relations: ['error'], 
             order: { timestamp: 'DESC' } 
         });
+    }
+
+    async getTrainingLogs(): Promise<TrainingLogEntity[]> {
+        return this.trainingLogRepo.find({ order: { timestamp: 'DESC' } });
     }
 
     async getInferenceErrors(): Promise<InferenceErrorEntity[]> {

@@ -1,6 +1,7 @@
 import type {
     InferenceLogRecord,
     InferenceErrorRecord,
+    TrainingLogRecord,
 } from '@cognitor/shared';
 
 
@@ -27,6 +28,10 @@ export async function getInferenceLogs(): Promise<FetchResult<InferenceLogRecord
 
 export async function getInferenceErrors(): Promise<FetchResult<InferenceErrorRecord[]>> {
     return fetchLogs<InferenceErrorRecord[]>('/logs/inference-errors');
+}
+
+export async function getTrainingLogs(): Promise<FetchResult<TrainingLogRecord[]>> {
+    return fetchLogs<TrainingLogRecord[]>('/logs/training-logs');
 }
 
 

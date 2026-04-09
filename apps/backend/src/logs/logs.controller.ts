@@ -15,4 +15,9 @@ export class LogsController {
     async getInferenceErrors() {
         return this.logsService.getInferenceErrors();
     }
+
+    @Get('training-logs')
+    async getTrainingLogs() {
+        return this.logsService.getTrainingLogs();
+    }
 }

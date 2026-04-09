@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { LogsModule } from './logs/logs.module';
 import { InferenceLogEntity } from './logs/inference-log.entity';
 import { InferenceErrorEntity } from './logs/inference-error.entity';
+import { TrainingLogEntity } from './logs/training-log.entity';
 
 
 @Module({
@@ -17,7 +18,7 @@ import { InferenceErrorEntity } from './logs/inference-error.entity';
             username: process.env.DB_USER ?? 'cognitoruser',
             password: process.env.DB_PASSWORD ?? 'cognitorpassword',
             database: process.env.DB_NAME ?? 'cognitor',
-            entities: [InferenceLogEntity, InferenceErrorEntity],
+            entities: [InferenceLogEntity, InferenceErrorEntity, TrainingLogEntity],
             synchronize: true,
         }),
         LogsModule,
