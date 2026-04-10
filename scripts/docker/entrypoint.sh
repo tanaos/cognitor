@@ -19,7 +19,11 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   su-exec postgres initdb -D "$PGDATA"
 fi
 
-su-exec postgres pg_ctl -D "$PGDATA" -o "-c listen_addresses='127.0.0.1' -p ${DB_PORT:-5432}" -w start
+if ! grep -q "host all all all scram-sha-256" "$PGDATA/pg_hba.conf"; then
+  echo "host all all all scram-sha-256" >> "$PGDATA/pg_hba.conf"
+fi
+
+su-exec postgres pg_ctl -D "$PGDATA" -o "-c listen_addresses='*' -p ${DB_PORT:-5432}" -w start
 
 if ! su-exec postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'" | grep -q 1; then
   su-exec postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE \"${POSTGRES_USER}\" WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}';"

@@ -45,6 +45,7 @@ COPY scripts/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 3000
+EXPOSE 3001
 EXPOSE 5432
 
 CMD ["/usr/local/bin/entrypoint.sh"]

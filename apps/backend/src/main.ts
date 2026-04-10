@@ -17,7 +17,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, documentFactory);
     
     app.enableCors();
-    await app.listen(3001);
+    await app.listen(3001, '0.0.0.0');
     console.log('Backend running on http://localhost:3001');
 }
 bootstrap();
