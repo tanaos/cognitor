@@ -42,23 +42,6 @@ cd cognitor
 docker compose up
 ```
 
-### Or run the unified Docker image from GHCR
-
-```bash
-docker volume create cognitor-pgdata
-
-docker run --name cognitor \
-    -e DB_HOST=127.0.0.1 \
-    -e DB_PORT=5432 \
-    -e DB_USER=cognitoruser \
-    -e DB_PASSWORD=cognitorpassword \
-    -e DB_NAME=cognitor \
-    -v cognitor-pgdata:/var/lib/postgresql/data \
-    -p 3000:3000 \
-    -p 5432:5432 \
-    -d ghcr.io/tanaos/cognitor:latest
-```
-
 ### 2️⃣ Log your first SLM call
 
 Use the [`cognitor` Python SDK](https://github.com/tanaos/cognitor-py) to log your SLM calls and start monitoring your model's performance.
