@@ -52,6 +52,7 @@ pip install cognitor
 
 ```python
 from cognitor import Cognitor
+from transformers import AutoTokenizer, pipeline
 
 # Initialize your model and tokenizer
 model_name = "gpt2"
