@@ -25,7 +25,7 @@ export default function TrainingLossChart({ data }: {
                         <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                         <Tooltip
                             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)' }}
-                            formatter={(v: unknown) => [typeof v === 'number' ? v.toFixed(4) : v]}
+                            formatter={(value, name) => [typeof value === 'number' ? value.toFixed(4) : value, String(name ?? '')]}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
                         <Line type='monotone' dataKey='train_loss' name='Train Loss' stroke='var(--primary)' strokeWidth={2} dot={false} connectNulls />

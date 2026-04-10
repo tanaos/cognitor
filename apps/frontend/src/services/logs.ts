@@ -5,7 +5,7 @@ import type {
 } from '@cognitor/shared';
 
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 type FetchResult<T> = { data: T; error: null } | { data: null; error: string };
 
