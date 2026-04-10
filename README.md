@@ -60,14 +60,7 @@ pipe = pipeline("text-generation", model=model_name, tokenizer=tokenizer)
 
 cognitor = Cognitor(
     model_name=model_name,
-    tokenizer=tokenizer,
-    log_type="database", # or "file" for local file logging
-    # Database connection parameters (only needed if log_type="database")
-    host="localhost",
-    port=5432,
-    user="postgres",
-    password="postgres",
-    dbname="cognitor"
+    tokenizer=tokenizer
 )
 
 # Run inference within the monitor context
