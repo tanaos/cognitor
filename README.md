@@ -2,7 +2,9 @@
 
 <img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" alt="Cognitor – Observability, evaluation and optimization platform for self-hosted SLMs and LLMs" width="600">
 
-Cognitor is an **observability platform for self-hosted SLMs and LLMs** that helps developers monitor, test, evaluate and optimize their language model-powered applications in one environment. It can be self-hosted in minutes and provides a unified dashboard for understanding model behavior, system performance and training outcomes.
+Cognitor is an **observability platform for self-hosted SLMs and LLMs** that helps developers monitor, test, evaluate and optimize their language model-powered applications in one environment. 
+
+It can be **self-hosted in minutes** and provides a unified dashboard for understanding model behavior, system performance and training outcomes.
 
 ## Why an observability platform for self-hosted models?
 
