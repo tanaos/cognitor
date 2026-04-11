@@ -7,6 +7,7 @@ import { ZodExceptionFilter } from './zod-exception.filter';
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.useGlobalFilters(new ZodExceptionFilter());
+    const port = Number(process.env.PORT ?? 3001);
 
     const config = new DocumentBuilder()
         .setTitle('Cognitor Backend API')
@@ -17,7 +18,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, documentFactory);
     
     app.enableCors();
-    await app.listen(3001, '0.0.0.0');
-    console.log('Backend running on http://localhost:3001');
+    await app.listen(port, '0.0.0.0');
+    console.log(`Backend running on http://localhost:${port}`);
 }
 bootstrap();

@@ -7,7 +7,7 @@
         "packages/*"
     ],
     "scripts": {
-        "dev": "concurrently \"npm run dev --workspace=apps/backend\" \"npm run dev --workspace=apps/frontend\"",
+        "dev": "concurrently \"PORT=3002 npm run dev --workspace=apps/backend\" \"BACKEND_INTERNAL_URL=http://127.0.0.1:3002 NEXT_PUBLIC_API_URL=http://127.0.0.1:3002 npm run dev --workspace=apps/frontend -- -p 3010\"",
         "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend",
         "start": "concurrently \"npm run start --workspace=apps/backend\" \"npm run start --workspace=apps/frontend\"",
         "lint": "npm run lint --workspaces --if-present",
