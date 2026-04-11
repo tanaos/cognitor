@@ -2,34 +2,34 @@
 
 <img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" alt="Cognitor – Small Language Model observability, evaluation and optimization" width="600">
 
-Cognitor is a **Small Language Model observability platform** that allows developers to monitor, test, evaluate and optimize their SLM applications in a unified environment. It can be self-hosted in minutes and provides a powerful dashboard for visualizing and analyzing your model's performance and behavior.
+Cognitor is an **observability platform for self-hosted SLMs and LLMs** that helps developers monitor, test, evaluate and optimize their model-powered applications in one environment. It can be self-hosted in minutes and provides a unified dashboard for understanding model behavior, system performance and training outcomes.
 
-## Why a SLM observability platform?
+## Why an observability platform for self-hosted models?
 
-SLMs present unique challenges that traditional LLM observability platforms are not designed to handle:
+Self-hosted language models require a different observability approach than API-first AI platforms. Cognitor is built for teams running models in their own infrastructure, with SLMs as the primary focus and design center:
 
-- **Self-Hosted**: SLMs are almost always self-hosted, making traditional API-based monitoring solutions ineffective.
-- **Overfitting**: with small models, overfitting isn't just a risk, it's a common occurrence. 
-- **Data Quality**: the quality of training data has a disproportionate impact on small models, making data monitoring crucial.
-- **Resource Constraints**: small models often run in resource-constrained environments, requiring efficient monitoring solutions (CPU, memory, storage).
-- **Behavior Drift**: small models can exhibit significant behavior changes with minor updates, making continuous monitoring essential.
-- **Rapid Iteration**: developers of small models often iterate quickly, necessitating a platform that can keep up with fast development cycles.
+- **Self-Hosted by Default**: when models run on your own machines, clusters or edge environments, you need visibility into both model behavior and infrastructure health.
+- **SLM-Specific Failure Modes**: small models are more sensitive to prompt changes, fine-tuning quality, resource ceilings and regressions introduced by rapid iteration.
+- **Training Data Sensitivity**: data quality issues can have an outsized impact on SLM performance, making data and run observability critical.
+- **Resource Constraints**: SLM deployments often operate under tighter CPU, memory, storage and latency budgets than larger hosted systems.
+- **Behavior Drift**: both self-hosted SLMs and LLMs can drift over time, but SLMs often show larger behavioral swings from smaller changes.
+- **Fast Local Experimentation**: teams working with self-hosted models need an observability stack that keeps pace with frequent prompt, model and training updates.
 
-Unique challenges require unique solutions, and Cognitor is designed to address the specific needs of SLM developers, providing them with the tools they need to succeed in this rapidly evolving field.
+Traditional observability tools usually stop at infrastructure metrics, while many LLM tools assume a hosted provider API. Cognitor bridges that gap for self-hosted model teams.
 
 ## Features
 
 <img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/dashboard.png" alt="Cognitor – Small Language Model observability, evaluation and optimization" width="600">
 
-- **SLM Application Monitoring**: Instrument your app and start tracking inference calls, training runs and data quality metrics for your self-hosted SLM applications.
-- **Unified Dashboard**: Visualize and analyze your model's performance, behavior, and data quality in a single, intuitive dashboard. Identify trends, outliers and areas for improvement with visualizations and analytics.
-- **Inference Logging**: Capture detailed logs of inference calls, including input data, output, latency, tokens, resource usage and outlier values. Spot performance drift and model behavior changes with comprehensive inference logging.
+- **Self-Hosted Model Monitoring**: Instrument your application and start tracking inference calls, training runs and data quality signals for self-hosted SLM and LLM workloads.
+- **Unified Dashboard**: Visualize model performance, system behavior and data quality in one dashboard. Identify trends, outliers and regressions across inference and training activity.
+- **Inference Logging**: Capture detailed logs of inference calls, including input data, output, latency, tokens, resource usage and anomalous values. Spot performance drift and model behavior changes with full request visibility.
 - **Inference Errors**: Capture and analyze inference errors, including error type, message, stack trace and frequency.
-- **Training Run Tracking**: Monitor training runs, including hyperparameters, train and eval loss, accuracy and resource usage. Identify issues and optimize your training process with detailed run tracking.
+- **Training Run Tracking**: Monitor training runs, including hyperparameters, train and eval loss, accuracy and resource usage. This is especially valuable for SLM workflows where small data or configuration changes can have large downstream effects.
 
 ## 🚀 Quickstart
 
-Get a local copy of `cognitor`, instrument your SLM app and start ingesting data in minutes.
+Get a local copy of `cognitor`, instrument your self-hosted model application and start ingesting data in minutes.
 
 ### 1️⃣ Start `cognitor` locally
 
@@ -42,9 +42,9 @@ cd cognitor
 docker compose up
 ```
 
-### 2️⃣ Log your first SLM call
+### 2️⃣ Log your first model call
 
-Use the [`cognitor` Python SDK](https://github.com/tanaos/cognitor-py) to log your SLM calls and start monitoring your model's performance.
+Use the [`cognitor` Python SDK](https://github.com/tanaos/cognitor-py) to log inference calls and start monitoring the performance of your self-hosted SLM or LLM application.
 
 ```bash
 pip install cognitor
