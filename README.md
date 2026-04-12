@@ -1,6 +1,6 @@
 # Cognitor
 
-<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" alt="Cognitor – Observability, evaluation and optimization platform for self-hosted SLMs and LLMs" style="margin-bottom: 20px;">
+<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" alt="Cognitor – Observability, evaluation and optimization platform for self-hosted SLMs and LLMs">
 
 Cognitor is an **observability platform for self-hosted SLMs and LLMs** that helps developers monitor, test, evaluate and optimize their language model-powered applications in one environment. 
 
@@ -21,7 +21,7 @@ Traditional observability tools usually stop at infrastructure metrics, while ma
 
 ## Features
 
-<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/dashboard.png" alt="Cognitor – Small Language Model observability, evaluation and optimization" style="box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18); margin-bottom: 20px;">
+<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/dashboard.png" alt="Cognitor – Small Language Model observability, evaluation and optimization">
 
 - **Self-Hosted Model Monitoring**: Instrument your application and start tracking inference calls, training runs and data quality signals for self-hosted SLM and LLM workloads.
 - **Unified Dashboard**: Visualize model performance, system behavior and data quality in one dashboard. Identify trends, outliers and regressions across inference and training activity.
@@ -80,7 +80,7 @@ Want to track training metrics? Check out the [cognitor-py SDK GitHub repo](http
 
 See your logged data in the Cognitor dashboard at `http://localhost:3000`.
 
-<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/inference-logs.png" alt="Cognitor – Small Language Model observability, evaluation and optimization" style="box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18); margin-bottom: 20px;">
+<img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/inference-logs.png" alt="Cognitor – Small Language Model observability, evaluation and optimization">
 
 ## Contributing
 
