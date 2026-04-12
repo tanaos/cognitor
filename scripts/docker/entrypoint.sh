@@ -35,6 +35,11 @@ if ! su-exec postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='${POST
   su-exec postgres psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"${POSTGRES_DB}\" OWNER \"${POSTGRES_USER}\";"
 fi
 
+if ! PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${DB_HOST:-127.0.0.1}" -p "${DB_PORT:-5432}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -tAc "SELECT 1" | grep -q 1; then
+  echo "Database connectivity check failed for ${POSTGRES_USER}@${DB_HOST:-127.0.0.1}:${DB_PORT:-5432}/${POSTGRES_DB}" >&2
+  exit 1
+fi
+
 shutdown() {
   su-exec postgres pg_ctl -D "$PGDATA" -m fast stop
 }

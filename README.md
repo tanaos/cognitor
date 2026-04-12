@@ -44,6 +44,19 @@ cd cognitor
 docker compose up
 ```
 
+### Alternative: run the published package image
+
+If you are running the published GHCR package directly, use the same port mappings and persistent volume as `docker compose up`:
+
+```bash
+docker run --name cognitor-app --rm \
+    -p 3000:3000 -p 3001:3001 -p 5432:5432 \
+    -v cognitor_pgdata:/var/lib/postgresql/data \
+    ghcr.io/tanaos/cognitor:latest
+```
+
+Then open `http://localhost:3000`.
+
 ### 2️⃣ Log your first model call
 
 Use the [`cognitor` Python SDK](https://github.com/tanaos/cognitor-py) to log inference calls and start monitoring the performance of your self-hosted SLM or LLM application.

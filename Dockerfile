@@ -22,6 +22,7 @@ WORKDIR /app
 RUN apk add --no-cache postgresql18 postgresql18-client su-exec
 
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 ENV BACKEND_INTERNAL_URL=http://127.0.0.1:3001
 ENV NEXT_PUBLIC_API_URL=/api
 ENV DB_HOST=127.0.0.1
