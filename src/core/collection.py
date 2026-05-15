@@ -1,0 +1,13 @@
+class Collection:
+    
+    def add(self):
+        ...
+        
+    def search(self):
+        ...
+        
+    def delete(self):
+        ...
+        
+    def update(self):
+        ...
