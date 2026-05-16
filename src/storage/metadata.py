@@ -4,7 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Optional
 
-from .db import Base, Document
+from src.core.database import Document
+from src.config.defaults import SQLLITE_DB_PATH
 
 
 class MetadataStore:
@@ -13,11 +14,10 @@ class MetadataStore:
     """
 
     def __init__(self, path: str):
-        db_path = Path(path) / "metadata.sqlite"
+        db_path = Path(path) / SQLLITE_DB_PATH
         db_url = f"sqlite:///{db_path}"
         self.engine = create_engine(db_url)
         self.SessionLocal = sessionmaker(bind=self.engine)
-        Base.metadata.create_all(self.engine)
 
     def insert(self, id: int, metadata: dict[str, str]) -> None:
         """
@@ -32,14 +32,13 @@ class MetadataStore:
             # Check if document exists
             doc = session.query(Document).filter(Document.id == id).first()
             if doc:
-                doc.metadata = json.dumps(metadata)
+                doc.metadata_json = json.dumps(metadata)
             else:
-                doc = Document(id=id, metadata=json.dumps(metadata))
+                doc = Document(id=id, metadata_json=json.dumps(metadata))
                 session.add(doc)
             session.commit()
         finally:
             session.close()
-
 
     def get(self, id: int) -> Optional[dict[str, str]]:
         """
@@ -54,6 +53,6 @@ class MetadataStore:
         session = self.SessionLocal()
         try:
             doc = session.query(Document).filter(Document.id == id).first()
-            return json.loads(doc.metadata) if doc else None
+            return json.loads(doc.metadata_json) if doc else None
         finally:
             session.close()

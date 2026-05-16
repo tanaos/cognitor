@@ -14,3 +14,6 @@ __pycache__/
 
 # Editor/OS noise
 .DS_Store
+
+# SQLite database file
+*.sqlite

@@ -1,0 +1,1 @@
+SQLLITE_DB_PATH = "./metadata.sqlite"
