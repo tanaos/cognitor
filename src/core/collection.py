@@ -37,3 +37,19 @@ class Collection:
             )
 
         return self._storage.add(vectors=vector_array, metadatas=metadatas)
+
+    def get_document(self, doc_id: int) -> tuple[list[float], dict[str, Any] | None]:
+        """
+        Retrieve a single document's vector and metadata by ID.
+
+        Args:
+            doc_id: The integer ID of the document.
+
+        Returns:
+            A tuple of (vector, metadata).
+        """
+        if doc_id < 0 or doc_id >= self._storage.id_counter:
+            raise KeyError(f"Document with id {doc_id} does not exist")
+        vector = self._storage.get_vectors([doc_id])[0].tolist()
+        metadata = self._storage.get_metadata([doc_id])[0]
+        return vector, metadata

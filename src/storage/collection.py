@@ -19,7 +19,7 @@ class CollectionStorage:
         """
         self.vectors: VectorStore = VectorStore(path, dim)
         self.metadata: MetadataStore = MetadataStore(path)
-        self._id_counter: int = self.vectors.load_size()
+        self.id_counter: int = self.vectors.load_size()
 
     def _generate_ids(self, n: int) -> List[int]:
         """
@@ -29,8 +29,8 @@ class CollectionStorage:
         Returns:
             List of unique integer IDs.
         """
-        ids = list(range(self._id_counter, self._id_counter + n))
-        self._id_counter += n
+        ids = list(range(self.id_counter, self.id_counter + n))
+        self.id_counter += n
         return ids
 
     def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]) -> List[int]:

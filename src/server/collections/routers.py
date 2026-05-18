@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Request, HTTPException
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
-    AddDocumentRequest, AddDocumentResponse
+    AddDocumentRequest, AddDocumentResponse, DocumentResponse
 
 
 collections_router = APIRouter()
@@ -112,3 +112,44 @@ async def add_documents(
         metadatas=request.metadata,
     )
     return AddDocumentResponse(ids=document_ids)
+
+@collections_router.get(
+    path="/{name}/documents/{id}",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Document retrieved successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection or document not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document with id 42 does not exist"}
+                }
+            }
+        }
+    }
+)
+async def get_document(
+    name: str,
+    id: int,
+    http_request: Request,
+) -> DocumentResponse:
+    """
+    Retrieve a document by its ID from the specified collection.
+    """
+    database = http_request.app.state.database
+    try:
+        collection = database.get_collection_service(name)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    try:
+        vector, metadata = collection.get_document(id)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    return DocumentResponse(id=id, vector=vector, metadata=metadata)

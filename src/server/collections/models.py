@@ -20,3 +20,8 @@ class AddDocumentRequest(BaseModel):
 
 class AddDocumentResponse(BaseModel):
     ids: list[int]
+
+class DocumentResponse(BaseModel):
+    id: int
+    vector: list[float]
+    metadata: dict[str, Any] | None
