@@ -34,6 +34,33 @@ def discover_collections(root_path: str) -> list[str]:
     return collections
 
 
+def discover_collections_with_dim(root_path: str) -> list[tuple[str, int]]:
+    """
+    Discover valid collections and their dimensions under the root path.
+
+    Args:
+        root_path: Root directory to search for collections.
+
+    Returns:
+        Sorted list of (name, dim) tuples for valid collections.
+    """
+    root = Path(root_path)
+    if not root.exists():
+        return []
+
+    results: list[tuple[str, int]] = []
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+
+        dim = _read_collection_dim_from_manifest(child / "collection.json")
+        if dim is not None:
+            results.append((child.name, dim))
+
+    results.sort(key=lambda x: x[0])
+    return results
+
+
 def discover_collection_dim(root_path: str, name: str) -> Optional[int]:
     """
     Return a collection dim from its manifest, or None if unavailable/invalid.

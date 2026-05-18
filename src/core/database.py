@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from src.storage.collection import CollectionStorage
-from src.storage.discovery import discover_collection_dim, discover_collections
+from src.storage.discovery import discover_collection_dim, discover_collections_with_dim
 
 
 class Database:
@@ -89,11 +89,11 @@ class Database:
 
 		return CollectionStorage(str(self._collection_path(name)), dim)
 
-	def list_collections(self) -> list[str]:
+	def list_collections(self) -> list[tuple[str, int]]:
 		"""
-		List all discovered collection names.
+		List all discovered collections with their dimensions.
 
 		Returns:
-			Sorted list of collection names.
+			Sorted list of (name, dim) tuples.
 		"""
-		return discover_collections(str(self.root_path))
+		return discover_collections_with_dim(str(self.root_path))

@@ -1,11 +1,14 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
 class Collection(BaseModel):
     name: str
-    description: Optional[str] = None
+    dim: int
     
 class ListCollectionsResponse(BaseModel):
     collections: list[Collection]
     total: int
+    
+class CreateCollectionRequest(BaseModel):
+    name: str
+    dim: int

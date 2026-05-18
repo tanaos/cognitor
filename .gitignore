@@ -17,3 +17,6 @@ __pycache__/
 
 # SQLite database file
 *.sqlite
+
+# Storage files
+storage/collections/
