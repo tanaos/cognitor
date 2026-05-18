@@ -107,8 +107,8 @@ async def add_documents(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f"Collection '{name}' does not exist"
         )
-    document_id = collection.add_document(
-        vector=request.vector,
-        metadata=request.metadata,
+    document_ids = collection.add_documents(
+        vectors=request.vectors,
+        metadatas=request.metadata,
     )
-    return AddDocumentResponse(id=document_id)
+    return AddDocumentResponse(ids=document_ids)

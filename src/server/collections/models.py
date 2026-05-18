@@ -15,8 +15,8 @@ class CreateCollectionRequest(BaseModel):
     dim: int
     
 class AddDocumentRequest(BaseModel):
-    vector: list[float]
-    metadata: dict[str, Any]
+    vectors: list[list[float]]
+    metadata: list[dict[str, Any]]
 
 class AddDocumentResponse(BaseModel):
-    id: int
+    ids: list[int]
