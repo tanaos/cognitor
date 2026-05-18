@@ -4,6 +4,7 @@ from pathlib import Path
 
 from src.storage.collection import CollectionStorage
 from src.storage.discovery import discover_collection_dim, discover_collections_with_dim
+from src.core.collection import Collection
 
 
 class Database:
@@ -74,7 +75,7 @@ class Database:
 
 	def get_collection(self, name: str) -> CollectionStorage:
 		"""
-		Retrieve an existing collection by name.
+		Retrieve a collection by name.
 
 		Args:
 			name: Collection name.
@@ -97,3 +98,16 @@ class Database:
 			Sorted list of (name, dim) tuples.
 		"""
 		return discover_collections_with_dim(str(self.root_path))
+
+	def get_collection_service(self, name: str) -> Collection:
+		"""
+		Get a Collection service instance for the specified collection name.
+
+		Args:
+			name: Collection name.
+
+		Returns:
+			Collection service instance bound to the requested collection.
+		"""
+		storage = self.get_collection(name)
+		return Collection(storage)

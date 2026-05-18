@@ -1,6 +1,7 @@
-from fastapi import APIRouter, status, Request
+from fastapi import APIRouter, status, Request, HTTPException
 
-from .models import ListCollectionsResponse, Collection, CreateCollectionRequest
+from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
+    AddDocumentRequest, AddDocumentResponse
 
 
 collections_router = APIRouter()
@@ -67,3 +68,47 @@ async def create_collection(request: Request, collection: CreateCollectionReques
         raise ValueError(str(e))
     
     return Collection(name=collection.name, dim=collection.dim)
+
+@collections_router.post(
+    path="/{name}/documents",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {
+            "description": "Document added successfully",
+            "content": {
+                "application/json": {
+                    "example": {"id": 123}
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        }
+    }
+)
+async def add_documents(
+    name: str,
+    request: AddDocumentRequest,
+    http_request: Request,
+) -> AddDocumentResponse:
+    """
+    Add a document to the specified collection.
+    """
+    database = http_request.app.state.database
+    try:
+        collection = database.get_collection_service(name)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Collection '{name}' does not exist"
+        )
+    document_id = collection.add_document(
+        vector=request.vector,
+        metadata=request.metadata,
+    )
+    return AddDocumentResponse(id=document_id)
