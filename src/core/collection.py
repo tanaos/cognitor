@@ -45,7 +45,7 @@ class Collection:
             raise ValueError("vectors must be two-dimensional")
         if vector_array.shape[1] != self._storage.vectors.dim:
             raise ValueError(
-                f"each vector must have dimension {self._storage.vectors.dim}"
+                f"size mismatch: each vector in this collection must have dimension {self._storage.vectors.dim}"
             )
         if vector_array.shape[0] != len(metadatas):
             raise ValueError("number of vectors and metadatas must match")

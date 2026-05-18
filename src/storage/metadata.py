@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from typing import Optional
 
 from src.storage.models import Document
-#from src.storage.orm import Base
+from src.storage.orm import Base
 from src.config.defaults import SQLLITE_DB_PATH
 
 
@@ -19,7 +19,7 @@ class MetadataStore:
         db_url = f"sqlite:///{db_path}"
         self.engine = create_engine(db_url)
         self.SessionLocal = sessionmaker(bind=self.engine)
-        # Base.metadata.create_all(self.engine)
+        Base.metadata.create_all(self.engine)
 
     def insert(self, id: int, metadata: dict[str, str]) -> None:
         """

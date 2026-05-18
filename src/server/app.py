@@ -48,7 +48,9 @@ app.add_middleware(
 async def value_error_handler(request: Request, exc: ValueError):
     return JSONResponse(
         status_code = status.HTTP_400_BAD_REQUEST,
-        content = "The provided data is invalid or corrupted."
+        content = ErrorResponse(
+            message=str(exc) or "Invalid request data"
+        ).model_dump()
     )
     
 # Handler for fastapi ValidationException and RequestValidationError.
