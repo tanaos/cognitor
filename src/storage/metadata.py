@@ -58,3 +58,24 @@ class MetadataStore:
             return json.loads(doc.metadata_json) if doc else None
         finally:
             session.close()
+
+    def delete(self, id: int) -> bool:
+        """
+        Delete a document's metadata record.
+
+        Args:
+            id: Document ID
+
+        Returns:
+            True if the record was deleted, False if it did not exist.
+        """
+        session = self.SessionLocal()
+        try:
+            doc = session.query(Document).filter(Document.id == id).first()
+            if doc is None:
+                return False
+            session.delete(doc)
+            session.commit()
+            return True
+        finally:
+            session.close()

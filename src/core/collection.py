@@ -40,7 +40,8 @@ class Collection:
 
     def get_document(self, doc_id: int) -> tuple[list[float], dict[str, Any] | None]:
         """
-        Retrieve a single document's vector and metadata by ID.
+        Retrieve a single document's vector and metadata by ID. If the metadata is None, it means
+        the document has been deleted and should not be accessible through the API.
 
         Args:
             doc_id: The integer ID of the document.
@@ -50,6 +51,24 @@ class Collection:
         """
         if doc_id < 0 or doc_id >= self._storage.id_counter:
             raise KeyError(f"Document with id {doc_id} does not exist")
-        vector = self._storage.get_vectors([doc_id])[0].tolist()
         metadata = self._storage.get_metadata([doc_id])[0]
+        if metadata is None:
+            raise KeyError(f"Document with id {doc_id} does not exist")
+        vector = self._storage.get_vectors([doc_id])[0].tolist()
         return vector, metadata
+
+    def delete_document(self, doc_id: int) -> None:
+        """
+        Delete a document by ID. This will only remove the document's metadata record,
+        effectively marking the document as deleted. The vector data will remain in storage
+        but will be inaccessible through the API. Vectors can be physically removed later during
+        a compact and rebuild process.
+
+        Args:
+            doc_id: The integer ID of the document.
+        """
+        if doc_id < 0 or doc_id >= self._storage.id_counter:
+            raise KeyError(f"Document with id {doc_id} does not exist")
+        deleted = self._storage.delete_document(doc_id)
+        if not deleted:
+            raise KeyError(f"Document with id {doc_id} does not exist")

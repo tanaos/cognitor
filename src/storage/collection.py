@@ -13,6 +13,7 @@ class CollectionStorage:
     def __init__(self, path: str, dim: int) -> None:
         """
         Initialize the collection storage.
+        
         Args:
             path: Directory path for storage files.
             dim: Dimensionality of the vectors.
@@ -24,8 +25,10 @@ class CollectionStorage:
     def _generate_ids(self, n: int) -> List[int]:
         """
         Generate a list of unique integer IDs.
+        
         Args:
             n: Number of IDs to generate.
+            
         Returns:
             List of unique integer IDs.
         """
@@ -36,9 +39,11 @@ class CollectionStorage:
     def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]) -> List[int]:
         """
         Add a batch of vectors and their metadata to storage.
+        
         Args:
             vectors: np.ndarray of shape (n, dim)
             metadatas: List of metadata dicts, length n
+            
         Returns:
             List of assigned integer IDs for the added vectors.
         """
@@ -52,8 +57,10 @@ class CollectionStorage:
     def get_vectors(self, ids: List[int]) -> np.ndarray:
         """
         Retrieve vectors by their IDs.
+        
         Args:
             ids: List of integer IDs.
+            
         Returns:
             np.ndarray of shape (len(ids), dim) containing the requested vectors.
         """
@@ -65,9 +72,25 @@ class CollectionStorage:
     def get_metadata(self, ids: List[int]) -> List[Dict[str, Any] | None]:
         """
         Retrieve metadata for a list of IDs.
+        
         Args:
             ids: List of integer IDs.
+            
         Returns:
             List of metadata dicts (or None if not found for an ID).
         """
         return [self.metadata.get(i) for i in ids]
+
+    def delete_document(self, doc_id: int) -> bool:
+        """
+        Delete a document's metadata record by ID. This does not remove the vector from storage, 
+        but marks the document as deleted by removing its metadata. Vectors can be physically
+        removed during future compaction processes.
+        
+        Args:
+            doc_id: Integer document ID.
+            
+        Returns:
+            True if deleted, False if not found.
+        """
+        return self.metadata.delete(doc_id)

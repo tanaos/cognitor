@@ -153,3 +153,44 @@ async def get_document(
             detail=str(e)
         )
     return DocumentResponse(id=id, vector=vector, metadata=metadata)
+
+@collections_router.delete(
+    path="/{name}/documents/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Document deleted successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection or document not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document with id 42 does not exist"}
+                }
+            }
+        }
+    }
+)
+async def delete_document(
+    name: str,
+    id: int,
+    http_request: Request,
+) -> None:
+    """
+    Delete a document by its ID from the specified collection.
+    """
+    database = http_request.app.state.database
+    try:
+        collection = database.get_collection_service(name)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Collection '{name}' does not exist"
+        )
+    try:
+        collection.delete_document(id)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
