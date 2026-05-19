@@ -35,6 +35,41 @@ async def list_collections(request: Request) -> ListCollectionsResponse:
     collections = [Collection(name=name, dim=dim, doc_count=doc_count) for name, dim, doc_count in collection_entries]
     return ListCollectionsResponse(collections=collections, total=len(collections))
 
+@collections_router.get(
+    path="/{name}",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Get collection details",
+            "content": {
+                "application/json": {
+                    "example": {"name": "collection1", "dim": 128, "doc_count": 42}
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        }
+    }
+)
+async def get_collection(request: Request, name: str) -> Collection:
+    """
+    Get a collection by name.
+    """
+    database = request.app.state.database
+    try:
+        name_, dim, doc_count = database.get_collection_info(name)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.args[0]
+        )
+    return Collection(name=name_, dim=dim, doc_count=doc_count)
+
 @collections_router.post(
     path="",
     status_code=status.HTTP_201_CREATED,
@@ -77,7 +112,8 @@ async def create_collection(request: Request, collection: CreateCollectionReques
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.args[0])
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.args[0])
     
-    return Collection(name=collection.name, dim=collection.dim)
+    return Collection(name=collection.name, dim=collection.dim, doc_count=0)
+
 
 @collections_router.delete(
     path="/{name}",
@@ -107,6 +143,7 @@ async def delete_collection(request: Request, name: str) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Collection '{name}' does not exist"
         )
+
 
 @collections_router.post(
     path="/{name}/documents",
@@ -152,6 +189,7 @@ async def add_documents(
     )
     return AddDocumentResponse(ids=document_ids)
 
+
 @collections_router.get(
     path="/{name}/documents/{id}",
     responses={
@@ -192,6 +230,7 @@ async def get_document(
             detail=str(e)
         )
     return DocumentResponse(id=id, vector=vector, metadata=metadata)
+
 
 @collections_router.delete(
     path="/{name}/documents/{id}",

@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from src.storage.collection import CollectionStorage
-from src.storage.discovery import discover_collection_dim, discover_collections_with_dim
+from src.storage.discovery import discover_collection_dim, discover_collection_info, discover_collections_with_dim
 from src.core.collection import Collection
 
 
@@ -92,9 +92,9 @@ class Database:
 		collection_path.rmdir()
 		return True
 
-	def get_collection(self, name: str) -> CollectionStorage:
+	def _get_collection(self, name: str) -> CollectionStorage:
 		"""
-		Retrieve a collection by name.
+		Retrieve a collection object by name.
 
 		Args:
 			name: Collection name.
@@ -108,6 +108,25 @@ class Database:
 			raise KeyError(f"Collection '{name}' does not exist")
 
 		return CollectionStorage(str(self._collection_path(name)), dim)
+
+	def get_collection_info(self, name: str) -> tuple[str, int, int]:
+		"""
+		Retrieve a collection's name, dimension, and document count by name.
+
+		Args:
+			name: Collection name.
+
+		Returns:
+			Tuple of (name, dim, doc_count).
+
+		Raises:
+			KeyError: If the collection does not exist.
+		"""
+		self._validate_collection_name(name)
+		info = discover_collection_info(str(self.root_path), name)
+		if info is None:
+			raise KeyError(f"Collection '{name}' does not exist")
+		return info
 
 	def list_collections(self) -> list[tuple[str, int, int]]:
 		"""
@@ -128,5 +147,5 @@ class Database:
 		Returns:
 			Collection service instance bound to the requested collection.
 		"""
-		storage = self.get_collection(name)
+		storage = self._get_collection(name)
 		return Collection(storage)

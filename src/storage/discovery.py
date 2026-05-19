@@ -64,6 +64,24 @@ def discover_collections_with_dim(root_path: str) -> list[tuple[str, int, int]]:
     return results
 
 
+def discover_collection_info(root_path: str, name: str) -> Optional[tuple[str, int, int]]:
+    """
+    Return (name, dim, doc_count) for a single collection, or None if unavailable.
+
+    Args:
+        root_path: Root directory where collections are stored.
+        name: Collection name.
+
+    Returns:
+        Tuple of (name, dim, doc_count) if the collection is valid, otherwise None.
+    """
+    collection_path = Path(root_path) / name
+    dim = _read_collection_dim_from_manifest(collection_path / "collection.json")
+    if dim is None:
+        return None
+    return (name, dim, _count_collection_documents(collection_path))
+
+
 def discover_collection_dim(root_path: str, name: str) -> Optional[int]:
     """
     Return a collection dim from its manifest, or None if unavailable/invalid.
