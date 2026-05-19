@@ -48,7 +48,15 @@ async def list_collections(request: Request) -> ListCollectionsResponse:
             }
         },
         status.HTTP_400_BAD_REQUEST: {
-            "description": "Invalid collection name or dimension, or collection already exists",
+            "description": "Invalid collection name or dimension",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "dim must be a positive integer"}
+                }
+            }
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Collection already exists",
             "content": {
                 "application/json": {
                     "example": {"detail": "Collection 'new_collection' already exists"}
@@ -65,7 +73,9 @@ async def create_collection(request: Request, collection: CreateCollectionReques
     try:
         database.create_collection(collection.name, collection.dim)
     except ValueError as e:
-        raise ValueError(str(e))
+        if "already exists" in str(e):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.args[0])
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.args[0])
     
     return Collection(name=collection.name, dim=collection.dim)
 
@@ -117,7 +127,7 @@ async def delete_collection(request: Request, name: str) -> None:
                     "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
                 }
             }
-        }
+        },
     }
 )
 async def add_documents(
