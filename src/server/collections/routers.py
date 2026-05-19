@@ -211,10 +211,10 @@ async def delete_document(
     database = http_request.app.state.database
     try:
         collection = database.get_collection_service(name)
-    except KeyError:
+    except KeyError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Collection '{name}' does not exist"
+            detail=e.args[0]
         )
     try:
         collection.delete_document(id)
