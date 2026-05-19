@@ -109,12 +109,12 @@ class Database:
 
 		return CollectionStorage(str(self._collection_path(name)), dim)
 
-	def list_collections(self) -> list[tuple[str, int]]:
+	def list_collections(self) -> list[tuple[str, int, int]]:
 		"""
-		List all discovered collections with their dimensions.
+		List all discovered collections with their dimensions and document counts.
 
 		Returns:
-			Sorted list of (name, dim) tuples.
+			Sorted list of (name, dim, doc_count) tuples.
 		"""
 		return discover_collections_with_dim(str(self.root_path))
 

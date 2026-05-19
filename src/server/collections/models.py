@@ -5,6 +5,7 @@ from typing import Any
 class Collection(BaseModel):
     name: str
     dim: int
+    doc_count: int
     
 class ListCollectionsResponse(BaseModel):
     collections: list[Collection]

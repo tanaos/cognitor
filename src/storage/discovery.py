@@ -1,6 +1,9 @@
 import json
+import sqlite3
 from typing import Optional
 from pathlib import Path
+
+from src.config.defaults import SQLLITE_DB_PATH
 
 
 def discover_collections(root_path: str) -> list[str]:
@@ -34,28 +37,28 @@ def discover_collections(root_path: str) -> list[str]:
     return collections
 
 
-def discover_collections_with_dim(root_path: str) -> list[tuple[str, int]]:
+def discover_collections_with_dim(root_path: str) -> list[tuple[str, int, int]]:
     """
-    Discover valid collections and their dimensions under the root path.
+    Discover valid collections, their dimensions, and document counts under the root path.
 
     Args:
         root_path: Root directory to search for collections.
 
     Returns:
-        Sorted list of (name, dim) tuples for valid collections.
+        Sorted list of (name, dim, doc_count) tuples for valid collections.
     """
     root = Path(root_path)
     if not root.exists():
         return []
 
-    results: list[tuple[str, int]] = []
+    results: list[tuple[str, int, int]] = []
     for child in root.iterdir():
         if not child.is_dir():
             continue
 
         dim = _read_collection_dim_from_manifest(child / "collection.json")
         if dim is not None:
-            results.append((child.name, dim))
+            results.append((child.name, dim, _count_collection_documents(child)))
 
     results.sort(key=lambda x: x[0])
     return results
@@ -99,3 +102,25 @@ def _read_collection_dim_from_manifest(manifest_path: Path) -> Optional[int]:
         return dim
 
     return None
+
+
+def _count_collection_documents(collection_path: Path) -> int:
+    """
+    Return the number of stored documents for a collection.
+
+    Args:
+        collection_path: Path to the collection directory.
+
+    Returns:
+        Number of rows in the collection metadata store, or 0 if unavailable.
+    """
+    db_path = collection_path / SQLLITE_DB_PATH
+    if not db_path.exists():
+        return 0
+
+    try:
+        with sqlite3.connect(db_path) as connection:
+            row = connection.execute("SELECT COUNT(*) FROM documents").fetchone()
+            return int(row[0]) if row is not None else 0
+    except sqlite3.Error:
+        return 0

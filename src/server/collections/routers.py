@@ -16,9 +16,9 @@ collections_router = APIRouter()
                 "application/json": {
                     "example": {
                         "collections": [
-                            {"name": "collection1", "description": None},
-                            {"name": "collection2", "description": None}
-                        ],
+                                {"name": "collection1", "dim": 128, "doc_count": 42},
+                                {"name": "collection2", "dim": 256, "doc_count": 7}
+                            ],
                         "total": 2
                     }
                 }
@@ -32,7 +32,7 @@ async def list_collections(request: Request) -> ListCollectionsResponse:
     """
     database = request.app.state.database
     collection_entries = database.list_collections()
-    collections = [Collection(name=name, dim=dim) for name, dim in collection_entries]
+    collections = [Collection(name=name, dim=dim, doc_count=doc_count) for name, dim, doc_count in collection_entries]
     return ListCollectionsResponse(collections=collections, total=len(collections))
 
 @collections_router.post(
