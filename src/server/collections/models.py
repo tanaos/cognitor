@@ -19,6 +19,9 @@ class AddDocumentRequest(BaseModel):
     vectors: list[list[float]]
     metadata: list[dict[str, Any]]
 
+class UpdateDocumentRequest(BaseModel):
+    metadata: dict[str, Any]
+
 class AddDocumentResponse(BaseModel):
     ids: list[int]
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Request, HTTPException
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
-    AddDocumentRequest, AddDocumentResponse, DocumentResponse
+    AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest
 
 
 collections_router = APIRouter()
@@ -272,3 +272,47 @@ async def delete_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+
+
+@collections_router.patch(
+    path="/{name}/documents/{id}",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Document metadata updated successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection or document not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document with id 42 does not exist"}
+                }
+            }
+        }
+    }
+)
+async def update_document(
+    name: str,
+    id: int,
+    request: UpdateDocumentRequest,
+    http_request: Request,
+) -> DocumentResponse:
+    """
+    Replace the metadata of a document by its ID.
+    """
+    database = http_request.app.state.database
+    try:
+        collection = database.get_collection_service(name)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.args[0]
+        )
+    try:
+        collection.update_document(id, request.metadata)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    vector, metadata = collection.get_document(id)
+    return DocumentResponse(id=id, vector=vector, metadata=metadata)

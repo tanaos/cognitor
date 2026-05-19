@@ -77,3 +77,20 @@ class Collection:
         deleted = self._storage.delete_document(doc_id)
         if not deleted:
             raise KeyError(f"Document with id {doc_id} does not exist")
+
+    def update_document(self, doc_id: int, metadata: dict[str, Any]) -> None:
+        """
+        Replace the metadata of an existing document.
+
+        Args:
+            doc_id: The integer ID of the document.
+            metadata: New metadata dictionary to store.
+
+        Raises:
+            KeyError: If the document does not exist or has been deleted.
+        """
+        if doc_id < 0 or doc_id >= self._storage.id_counter:
+            raise KeyError(f"Document with id {doc_id} does not exist")
+        if self._storage.get_metadata([doc_id])[0] is None:
+            raise KeyError(f"Document with id {doc_id} does not exist")
+        self._storage.metadata.insert(doc_id, metadata)
