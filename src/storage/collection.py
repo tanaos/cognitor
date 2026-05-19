@@ -7,7 +7,7 @@ from .metadata import MetadataStore
 
 class CollectionStorage:
     """
-    Manages storage and retrieval of vectors and their associated metadata.
+    Manages storage-level operations on vectors and their associated metadata.
     """
 
     def __init__(self, path: str, dim: int) -> None:

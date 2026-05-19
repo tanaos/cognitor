@@ -6,6 +6,11 @@ from src.storage.collection import CollectionStorage
 
 
 class Collection:
+    """
+    Manages collection-level operations on documents. Storage-level operations should be performed
+    through the underlying CollectionStorage instance.
+    """
+    
     def __init__(self, storage: CollectionStorage) -> None:
         self._storage = storage
         

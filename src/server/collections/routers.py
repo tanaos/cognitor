@@ -69,6 +69,35 @@ async def create_collection(request: Request, collection: CreateCollectionReques
     
     return Collection(name=collection.name, dim=collection.dim)
 
+@collections_router.delete(
+    path="/{name}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Collection deleted successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        }
+    }
+)
+async def delete_collection(request: Request, name: str) -> None:
+    """
+    Delete a collection by name.
+    """
+    database = request.app.state.database
+    deleted = database.delete_collection(name)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Collection '{name}' does not exist"
+        )
+
 @collections_router.post(
     path="/{name}/documents",
     status_code=status.HTTP_201_CREATED,

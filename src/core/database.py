@@ -73,6 +73,25 @@ class Database:
 
 		return CollectionStorage(str(collection_path), dim)
 
+	def delete_collection(self, name: str) -> bool:
+		"""
+		Delete a collection by name.
+
+		Args:
+			name: Collection name.
+
+		Returns:
+			True if the collection was deleted, False if it did not exist.
+		"""
+		self._validate_collection_name(name)
+		collection_path = self._collection_path(name)
+		if not collection_path.exists():
+			return False
+		for item in collection_path.iterdir():
+			item.unlink()
+		collection_path.rmdir()
+		return True
+
 	def get_collection(self, name: str) -> CollectionStorage:
 		"""
 		Retrieve a collection by name.
