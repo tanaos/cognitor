@@ -9,6 +9,7 @@ import traceback
 from .base.routers import base_router
 from .collections.routers import collections_router
 from .responses import ErrorResponse
+from .middleware.auth import AuthMiddleware
 
 from src.utils.logging import setup_logging
 from src.config.settings import get_config
@@ -34,12 +35,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# ----- Middleware -----
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+app.add_middleware(AuthMiddleware)
 
 # ----- Exception handlers -----
 
