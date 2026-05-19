@@ -107,3 +107,17 @@ class VectorStore:
         assert self.vectors is not None
         self.vectors[start:start + batch_size] = batch_vectors
         self.vectors.flush()
+
+    def truncate(self, size: int) -> None:
+        """
+        Shrink the vector store to ``size`` vectors, discarding any vectors
+        beyond that index. Used by WAL recovery to roll back partial writes.
+
+        Args:
+            size: New number of vectors to retain (must be <= current size).
+        """
+        if size < 0:
+            raise ValueError("size must be non-negative")
+        if size > self.size:
+            raise ValueError("truncate cannot grow the vector store")
+        self._resize(size)

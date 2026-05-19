@@ -1,8 +1,8 @@
-
 from typing import List, Dict, Any
 import numpy as np
 from .vectors import VectorStore
 from .metadata import MetadataStore
+from .wal import WriteAheadLog
 
 
 class CollectionStorage:
@@ -20,6 +20,10 @@ class CollectionStorage:
         """
         self.vectors: VectorStore = VectorStore(path, dim)
         self.metadata: MetadataStore = MetadataStore(path)
+        self.wal: WriteAheadLog = WriteAheadLog(path)
+        # Recover before setting id_counter: rolls back any uncommitted vectors and
+        # removes orphaned metadata rows so both stores are consistent.
+        self.wal.recover(self.vectors, self.metadata)
         self.id_counter: int = self.vectors.load_size()
 
     def _generate_ids(self, n: int) -> List[int]:
@@ -49,9 +53,12 @@ class CollectionStorage:
         """
         n = len(metadatas)
         ids = self._generate_ids(n)
+        seq = self.wal.log_add_pending(vector_offset=self.vectors.size, count=n)
         self.vectors.append(vectors)
-        for i, meta in zip(ids, metadatas):
-            self.metadata.insert(i, meta)
+        # Single transaction: either all metadata rows are committed or none are,
+        # so a crash here cannot leave partial metadata without corresponding vectors.
+        self.metadata.insert_batch(ids, metadatas)
+        self.wal.log_add_committed(seq, vector_offset=ids[0], count=n)
         return ids
 
     def get_vectors(self, ids: List[int]) -> np.ndarray:

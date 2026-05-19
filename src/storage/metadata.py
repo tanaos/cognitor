@@ -31,7 +31,6 @@ class MetadataStore:
         """
         session = self.SessionLocal()
         try:
-            # Check if document exists
             doc = session.query(Document).filter(Document.id == id).first()
             if doc:
                 doc.metadata_json = json.dumps(metadata)
@@ -39,6 +38,51 @@ class MetadataStore:
                 doc = Document(id=id, metadata_json=json.dumps(metadata))
                 session.add(doc)
             session.commit()
+        finally:
+            session.close()
+
+    def insert_batch(self, ids: list[int], metadatas: list[dict[str, str]]) -> None:
+        """
+        Insert a batch of documents in a single atomic transaction.
+
+        If the write fails partway through, the entire batch is rolled back,
+        preventing partial metadata from being committed without corresponding
+        vectors.
+
+        Args:
+            ids: Document IDs.
+            metadatas: Metadata dictionaries, one per ID.
+        """
+        session = self.SessionLocal()
+        try:
+            for id, metadata in zip(ids, metadatas):
+                session.add(Document(id=id, metadata_json=json.dumps(metadata)))
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def delete_ids(self, ids: list[int]) -> None:
+        """
+        Delete all metadata rows for the given IDs in a single transaction.
+
+        Used by WAL recovery to remove metadata that was committed but whose
+        corresponding vectors were rolled back.
+
+        Args:
+            ids: Document IDs to delete.
+        """
+        session = self.SessionLocal()
+        try:
+            session.query(Document).filter(Document.id.in_(ids)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 
