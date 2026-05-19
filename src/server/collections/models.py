@@ -29,3 +29,9 @@ class DocumentResponse(BaseModel):
     id: int
     vector: list[float]
     metadata: dict[str, Any] | None
+
+class ListDocumentsResponse(BaseModel):
+    documents: list[DocumentResponse]
+    total: int
+    offset: int
+    limit: int

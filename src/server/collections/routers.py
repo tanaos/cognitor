@@ -1,7 +1,8 @@
-from fastapi import APIRouter, status, Request, HTTPException
+from fastapi import APIRouter, status, Request, HTTPException, Query
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
-    AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest
+    AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
+    ListDocumentsResponse
 
 
 collections_router = APIRouter()
@@ -188,6 +189,54 @@ async def add_documents(
         metadatas=request.metadata,
     )
     return AddDocumentResponse(ids=document_ids)
+
+
+@collections_router.get(
+    path="/{name}/documents",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Documents retrieved successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        }
+    }
+)
+async def list_documents(
+    name: str,
+    http_request: Request,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=1000),
+) -> ListDocumentsResponse:
+    """
+    Retrieve paginated documents from the specified collection.
+    """
+    database = http_request.app.state.database
+    try:
+        _, _, doc_count = database.get_collection_info(name)
+        collection = database.get_collection_service(name)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.args[0]
+        )
+
+    entries = collection.list_documents(offset=offset, limit=limit)
+    documents = [
+        DocumentResponse(id=doc_id, vector=vector, metadata=metadata)
+        for doc_id, vector, metadata in entries
+    ]
+    return ListDocumentsResponse(
+        documents=documents,
+        total=doc_count,
+        offset=offset,
+        limit=limit,
+    )
 
 
 @collections_router.get(

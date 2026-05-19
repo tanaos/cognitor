@@ -7,8 +7,7 @@ from src.storage.collection import CollectionStorage
 
 class Collection:
     """
-    Manages collection-level operations on documents. Storage-level operations should be performed
-    through the underlying CollectionStorage instance.
+    Manages operations on documents belonging to a specific collection.
     """
     
     def __init__(self, storage: CollectionStorage) -> None:
@@ -61,6 +60,46 @@ class Collection:
             raise KeyError(f"Document with id {doc_id} does not exist")
         vector = self._storage.get_vectors([doc_id])[0].tolist()
         return vector, metadata
+
+    def list_documents(
+        self,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[tuple[int, list[float], dict[str, Any]]]:
+        """
+        List non-deleted documents in insertion order using offset/limit pagination.
+
+        Args:
+            offset: Number of non-deleted documents to skip.
+            limit: Maximum number of documents to return.
+
+        Returns:
+            A list of tuples in the form (id, vector, metadata).
+        """
+        if offset < 0:
+            raise ValueError("offset must be greater than or equal to 0")
+        if limit <= 0:
+            raise ValueError("limit must be greater than 0")
+
+        results: list[tuple[int, list[float], dict[str, Any]]] = []
+        seen = 0
+
+        for doc_id in range(self._storage.id_counter):
+            metadata = self._storage.get_metadata([doc_id])[0]
+            if metadata is None:
+                continue
+
+            if seen < offset:
+                seen += 1
+                continue
+
+            vector = self._storage.get_vectors([doc_id])[0].tolist()
+            results.append((doc_id, vector, metadata))
+
+            if len(results) >= limit:
+                break
+
+        return results
 
     def delete_document(self, doc_id: int) -> None:
         """

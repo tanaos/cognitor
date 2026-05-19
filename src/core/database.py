@@ -9,7 +9,8 @@ from src.core.collection import Collection
 
 class Database:
 	"""
-    Database-level API for managing named vector collections.
+    Database-level API for managing collection lifecycle, selection and discovery, as well as 
+    collection folders and manifests.
     """
 
 	_VALID_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
