@@ -93,7 +93,7 @@ class Database:
 		collection_path.rmdir()
 		return True
 
-	def _get_collection(self, name: str) -> CollectionStorage:
+	def get_collection_ref(self, name: str) -> CollectionStorage:
 		"""
 		Retrieve a collection object by name.
 
@@ -148,5 +148,5 @@ class Database:
 		Returns:
 			Collection service instance bound to the requested collection.
 		"""
-		storage = self._get_collection(name)
+		storage = self.get_collection_ref(name)
 		return Collection(storage)

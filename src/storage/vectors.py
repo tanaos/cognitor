@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 from typing import Literal
 
+import numpy.typing as npt
 
 MemMapMode = Literal["r", "r+", "w+", "c", "readonly", "readwrite", "write", "copyonwrite"]
 
@@ -11,10 +12,13 @@ class VectorStore:
     Manages storage and retrieval of vectors using memory-mapped files.
     """
     
-    def __init__(self, path: str, dim: int, dtype: type = np.float16):
+    # TODO: vector index should NOT be its position in the file, because compaction rewrites 
+    # the file and reassigns IDs.
+    
+    def __init__(self, path: str, dim: int, dtype: npt.DTypeLike = np.float16):
         self.path = path
         self.dim = dim
-        self.dtype = dtype
+        self.dtype: npt.DTypeLike = dtype
         self.file = Path(path) / "vectors.f16"
 
         self.vectors = None
@@ -121,3 +125,42 @@ class VectorStore:
         if size > self.size:
             raise ValueError("truncate cannot grow the vector store")
         self._resize(size)
+
+    def replace_all(self, vectors: np.ndarray) -> None:
+        """
+        Atomically replace the entire vector file with a new array.
+
+        Writes to a sibling temp file first, then renames it over the current
+        file so the operation is crash-safe at the filesystem level. The
+        in-memory mmap is refreshed after the rename.
+
+        Args:
+            vectors: Array of shape (n, dim) to write.
+        """
+        if vectors.ndim != 2 or vectors.shape[1] != self.dim:
+            raise ValueError(f"vectors must have shape (n, {self.dim})")
+
+        new_count = len(vectors)
+        tmp = self.file.with_suffix(".tmp")
+        self.file.parent.mkdir(parents=True, exist_ok=True)
+
+        if new_count > 0:
+            arr = np.memmap(tmp, dtype=self.dtype, mode="w+", shape=(new_count, self.dim))
+            arr[:] = vectors.astype(self.dtype)
+            arr.flush()
+            del arr
+        else:
+            tmp.write_bytes(b"")
+
+        # Release current mmap before renaming over the file.
+        if self.vectors is not None:
+            del self.vectors
+            self.vectors = None
+
+        tmp.replace(self.file)
+        self.size = new_count
+
+        if new_count > 0:
+            self.vectors = np.memmap(
+                self.file, dtype=self.dtype, mode="r+", shape=(new_count, self.dim)
+            )

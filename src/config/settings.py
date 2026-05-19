@@ -6,6 +6,7 @@ class Config(BaseSettings):
 
     auth_enabled: bool = False
     api_key: str = ""
+    compaction_threshold: float = 0.20
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -103,6 +103,43 @@ class MetadataStore:
         finally:
             session.close()
 
+    def count(self) -> int:
+        """
+        Return the number of live (non-deleted) documents.
+
+        Returns:
+            Row count of the documents table.
+        """
+        session = self.SessionLocal()
+        try:
+            return session.query(Document).count()
+        finally:
+            session.close()
+
+    def rewrite(self, ids: list[int], metadatas: list[dict[str, str]]) -> None:
+        """
+        Atomically replace all stored metadata with a new id/metadata mapping.
+
+        Deletes every existing row and inserts the new rows in a single
+        transaction. Used during compaction to reassign document IDs after
+        soft-deleted vectors have been physically removed.
+
+        Args:
+            ids: New sequential document IDs.
+            metadatas: Metadata dictionaries, one per ID.
+        """
+        session = self.SessionLocal()
+        try:
+            session.query(Document).delete()
+            for id, metadata in zip(ids, metadatas):
+                session.add(Document(id=id, metadata_json=json.dumps(metadata)))
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def delete(self, id: int) -> bool:
         """
         Delete a document's metadata record.

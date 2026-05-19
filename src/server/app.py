@@ -8,6 +8,7 @@ import traceback
 
 from .base.routers import base_router
 from .collections.routers import collections_router
+from .admin.routers import admin_router
 from .responses import ErrorResponse
 from .middleware.auth import AuthMiddleware
 
@@ -15,6 +16,7 @@ from src.utils.logging import setup_logging
 from src.config.settings import get_config
 from src.storage.orm import init_db
 from src.core.database import Database
+from src.execution.scheduler import CompactionScheduler
 
 
 setup_logging()
@@ -26,6 +28,10 @@ async def lifespan(app: FastAPI):
     _logger.info("cognitor is starting up")
     app.state.config = get_config()
     app.state.database = Database()
+    app.state.compaction_scheduler = CompactionScheduler(
+        threshold=app.state.config.compaction_threshold,
+        database=app.state.database,
+    )
     init_db()
     yield
     _logger.info("cognitor is shutting down")
@@ -114,4 +120,10 @@ app.include_router(
     prefix="/collections",
     router=collections_router,
     tags=["collection management"]
+)
+
+app.include_router(
+    prefix="/admin",
+    router=admin_router,
+    tags=["admin endpoints"]
 )

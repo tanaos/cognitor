@@ -192,10 +192,9 @@ class WriteAheadLog:
 
     def compact(self) -> None:
         """
-        Rewrite the WAL keeping only entries that have not yet been committed.
-
-        This should be called periodically (e.g. after a snapshot) to prevent
-        the log file from growing unboundedly.
+        Rewrite the WAL keeping only entries that have not yet been committed. This prevents the
+        WAL from growing indefinitely with obsolete entries after many operations and compactions.
+        This operation is performed after a collection compaction.
         """
         with self._lock:
             all_entries = list(self._iter_entries())

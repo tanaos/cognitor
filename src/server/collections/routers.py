@@ -322,6 +322,10 @@ async def delete_document(
             detail=str(e)
         )
 
+    # After a deletion, check if the collection has reached the compaction threshold and 
+    # schedule compaction if needed.
+    await http_request.app.state.compaction_scheduler.check_and_schedule(name)
+
 
 @collections_router.patch(
     path="/{name}/documents/{id}",
