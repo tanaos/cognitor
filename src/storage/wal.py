@@ -16,7 +16,7 @@ class WALEntry:
     status: Literal["PENDING", "COMMITTED"]
     vector_offset: int = 0   # For ADD: index of first new vector in the file
     count: int = 0           # For ADD: number of vectors in this batch
-    doc_id: int = -1         # For DELETE: document id
+    doc_id: str = ""         # For DELETE: document UUID
 
 
 class WriteAheadLog:
@@ -107,12 +107,12 @@ class WriteAheadLog:
                 )
             )
 
-    def log_delete_pending(self, doc_id: int) -> int:
+    def log_delete_pending(self, doc_id: str) -> int:
         """
         Record a pending DELETE operation before writing to storage.
         
         Args:
-            doc_id: ID of the document being deleted.
+            doc_id: UUID of the document being deleted.
 
         Returns:
             Sequence number to pass to ``log_delete_committed``.
@@ -126,13 +126,13 @@ class WriteAheadLog:
             )
             return seq
 
-    def log_delete_committed(self, seq: int, doc_id: int) -> None:
+    def log_delete_committed(self, seq: int, doc_id: str) -> None:
         """
         Record that a previously pending DELETE has been fully committed.
         
         Args:
             seq: Sequence number returned by the corresponding ``log_delete_pending``.
-            doc_id: ID of the document that was deleted.
+            doc_id: UUID of the document that was deleted.
         """
         with self._lock:
             self._append(
@@ -148,11 +148,10 @@ class WriteAheadLog:
         Scans the WAL for PENDING ADD entries that have no matching COMMITTED
         entry and performs a two-phase rollback:
 
-        1. Deletes any metadata rows whose IDs belong to uncommitted batches.
-           Because IDs are assigned sequentially starting from ``vector_offset``,
-           the IDs for a batch are always ``range(vector_offset, vector_offset + count)``.
-           This handles the case where metadata was committed to SQLite but the
-           process crashed before ``WAL COMMITTED`` was written.
+        1. Deletes any metadata rows whose ``vector_pos`` falls within the range
+           of an uncommitted batch. This handles the case where metadata was
+           committed to SQLite but the process crashed before ``WAL COMMITTED``
+           was written.
 
         2. Truncates the vector file back to the smallest unconfirmed write
            offset, discarding any partially-written vectors.
@@ -177,13 +176,9 @@ class WriteAheadLog:
         if not pending_adds:
             return
 
-        # Delete any metadata rows that were committed for these batches.
-        orphaned_ids = [
-            doc_id
-            for e in pending_adds
-            for doc_id in range(e.vector_offset, e.vector_offset + e.count)
-        ]
-        metadata_store.delete_ids(orphaned_ids)
+        # Delete any metadata rows whose vector_pos falls within an uncommitted batch.
+        for e in pending_adds:
+            metadata_store.delete_by_vector_pos_range(e.vector_offset, e.count)
 
         # Truncate to the earliest un-committed write offset.
         safe_size = min(e.vector_offset for e in pending_adds)

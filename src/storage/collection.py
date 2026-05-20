@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import uuid
 import numpy as np
 from .vectors import VectorStore
 from .metadata import MetadataStore
@@ -21,26 +22,23 @@ class CollectionStorage:
         self.vectors: VectorStore = VectorStore(path, dim)
         self.metadata: MetadataStore = MetadataStore(path)
         self.wal: WriteAheadLog = WriteAheadLog(path)
-        # Recover before setting id_counter: rolls back any uncommitted vectors and
-        # removes orphaned metadata rows so both stores are consistent.
+        # Recover before opening: rolls back any uncommitted vectors and removes
+        # orphaned metadata rows so both stores are consistent.
         self.wal.recover(self.vectors, self.metadata)
-        self.id_counter: int = self.vectors.load_size()
 
-    def _generate_ids(self, n: int) -> List[int]:
+    def _generate_ids(self, n: int) -> List[str]:
         """
-        Generate a list of unique integer IDs.
+        Generate a list of unique UUID document IDs.
         
         Args:
             n: Number of IDs to generate.
             
         Returns:
-            List of unique integer IDs.
+            List of unique UUID strings.
         """
-        ids = list(range(self.id_counter, self.id_counter + n))
-        self.id_counter += n
-        return ids
+        return [str(uuid.uuid4()) for _ in range(n)]
 
-    def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]) -> List[int]:
+    def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]) -> List[str]:
         """
         Add a batch of vectors and their metadata to storage.
         
@@ -49,53 +47,59 @@ class CollectionStorage:
             metadatas: List of metadata dicts, length n
             
         Returns:
-            List of assigned integer IDs for the added vectors.
+            List of assigned UUID strings for the added vectors.
         """
         n = len(metadatas)
         ids = self._generate_ids(n)
-        seq = self.wal.log_add_pending(vector_offset=self.vectors.size, count=n)
+        vector_start = self.vectors.size
+        vector_positions = list(range(vector_start, vector_start + n))
+        seq = self.wal.log_add_pending(vector_offset=vector_start, count=n)
         self.vectors.append(vectors)
         # Single transaction: either all metadata rows are committed or none are,
         # so a crash here cannot leave partial metadata without corresponding vectors.
-        self.metadata.insert_batch(ids, metadatas)
-        self.wal.log_add_committed(seq, vector_offset=ids[0], count=n)
+        self.metadata.insert_batch(ids, vector_positions, metadatas)
+        self.wal.log_add_committed(seq, vector_offset=vector_start, count=n)
         return ids
 
-    def get_vectors(self, ids: List[int]) -> np.ndarray:
+    def get_vectors(self, ids: List[str]) -> np.ndarray:
         """
-        Retrieve vectors by their IDs.
+        Retrieve vectors by their UUIDs.
         
         Args:
-            ids: List of integer IDs.
+            ids: List of document UUIDs.
             
         Returns:
             np.ndarray of shape (len(ids), dim) containing the requested vectors.
         """
+        raw = self.metadata.get_vector_positions(ids)
+        if any(p is None for p in raw):
+            raise KeyError("One or more document IDs not found")
+        positions: list[int] = [p for p in raw if p is not None]
         self.vectors.open("r")
         if self.vectors.vectors is None:
             raise ValueError("No vectors stored.")
-        return self.vectors.vectors[ids]
+        return self.vectors.vectors[positions]
 
-    def get_metadata(self, ids: List[int]) -> List[Dict[str, Any] | None]:
+    def get_metadata(self, ids: List[str]) -> List[Dict[str, Any] | None]:
         """
-        Retrieve metadata for a list of IDs.
+        Retrieve metadata for a list of UUIDs.
         
         Args:
-            ids: List of integer IDs.
+            ids: List of document UUIDs.
             
         Returns:
             List of metadata dicts (or None if not found for an ID).
         """
         return [self.metadata.get(i) for i in ids]
 
-    def delete_document(self, doc_id: int) -> bool:
+    def delete_document(self, doc_id: str) -> bool:
         """
-        Delete a document's metadata record by ID. This does not remove the vector from storage, 
+        Delete a document's metadata record by UUID. This does not remove the vector from storage, 
         but marks the document as deleted by removing its metadata. Vectors can be physically
         removed during future compaction processes.
         
         Args:
-            doc_id: Integer document ID.
+            doc_id: Document UUID.
             
         Returns:
             True if deleted, False if not found.

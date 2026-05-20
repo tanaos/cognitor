@@ -3,9 +3,11 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
+from src.storage.compaction import CompactionResult
+
 if TYPE_CHECKING:
     from src.core.database import Database
-    from src.storage.compaction import CompactionResult
+
 
 _logger = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class CompactionScheduler:
         except KeyError:
             return
 
-        total = storage.id_counter
+        total = storage.vectors.load_size()
         if total == 0:
             return
 

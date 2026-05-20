@@ -21,27 +21,28 @@ class MetadataStore:
         self.SessionLocal = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
-    def insert(self, id: int, metadata: dict[str, str]) -> None:
+    def update_metadata(self, id: str, metadata: dict[str, str]) -> None:
         """
-        Insert or update a document's metadata.
-        
+        Update the metadata of an existing document. The vector_pos is preserved.
+
         Args:
-            id: Document ID
-            metadata: Metadata dictionary
+            id: Document UUID
+            metadata: New metadata dictionary
+
+        Raises:
+            KeyError: If no document with the given ID exists.
         """
         session = self.SessionLocal()
         try:
             doc = session.query(Document).filter(Document.id == id).first()
-            if doc:
-                doc.metadata_json = json.dumps(metadata)
-            else:
-                doc = Document(id=id, metadata_json=json.dumps(metadata))
-                session.add(doc)
+            if doc is None:
+                raise KeyError(f"Document with id {id} does not exist")
+            doc.metadata_json = json.dumps(metadata)
             session.commit()
         finally:
             session.close()
 
-    def insert_batch(self, ids: list[int], metadatas: list[dict[str, str]]) -> None:
+    def insert_batch(self, ids: list[str], vector_positions: list[int], metadatas: list[dict[str, str]]) -> None:
         """
         Insert a batch of documents in a single atomic transaction.
 
@@ -50,13 +51,14 @@ class MetadataStore:
         vectors.
 
         Args:
-            ids: Document IDs.
+            ids: Stable document UUIDs.
+            vector_positions: Position of each document's vector in the vector file.
             metadatas: Metadata dictionaries, one per ID.
         """
         session = self.SessionLocal()
         try:
-            for id, metadata in zip(ids, metadatas):
-                session.add(Document(id=id, metadata_json=json.dumps(metadata)))
+            for i in range(len(ids)):
+                session.add(Document(id=ids[i], vector_pos=vector_positions[i], metadata_json=json.dumps(metadatas[i])))
             session.commit()
         except Exception:
             session.rollback()
@@ -64,21 +66,23 @@ class MetadataStore:
         finally:
             session.close()
 
-    def delete_ids(self, ids: list[int]) -> None:
+    def delete_by_vector_pos_range(self, offset: int, count: int) -> None:
         """
-        Delete all metadata rows for the given IDs in a single transaction.
+        Delete all metadata rows whose vector_pos falls in [offset, offset + count).
 
-        Used by WAL recovery to remove metadata that was committed but whose
-        corresponding vectors were rolled back.
+        Used by WAL recovery to remove metadata rows for vectors that were
+        written to the file but whose ADD operation was never committed.
 
         Args:
-            ids: Document IDs to delete.
+            offset: First vector position to remove.
+            count: Number of consecutive positions to remove.
         """
         session = self.SessionLocal()
         try:
-            session.query(Document).filter(Document.id.in_(ids)).delete(
-                synchronize_session=False
-            )
+            session.query(Document).filter(
+                Document.vector_pos >= offset,
+                Document.vector_pos < offset + count,
+            ).delete(synchronize_session=False)
             session.commit()
         except Exception:
             session.rollback()
@@ -86,12 +90,30 @@ class MetadataStore:
         finally:
             session.close()
 
-    def get(self, id: int) -> Optional[dict[str, str]]:
+    def get_vector_positions(self, ids: list[str]) -> list[int | None]:
+        """
+        Return the vector file position for each document UUID.
+
+        Args:
+            ids: Document UUIDs to look up.
+
+        Returns:
+            List of vector positions, or None for any ID not found.
+        """
+        session = self.SessionLocal()
+        try:
+            rows = session.query(Document.id, Document.vector_pos).filter(Document.id.in_(ids)).all()
+            pos_map = {row.id: row.vector_pos for row in rows}
+            return [pos_map.get(i) for i in ids]
+        finally:
+            session.close()
+
+    def get(self, id: str) -> Optional[dict[str, str]]:
         """
         Retrieve a document's metadata.
         
         Args:
-            id: Document ID
+            id: Document UUID
             
         Returns:
             Metadata dictionary or None if not found
@@ -116,23 +138,63 @@ class MetadataStore:
         finally:
             session.close()
 
-    def rewrite(self, ids: list[int], metadatas: list[dict[str, str]]) -> None:
+    def list_live(self, offset: int, limit: int) -> list[tuple[str, int, dict[str, str]]]:
         """
-        Atomically replace all stored metadata with a new id/metadata mapping.
-
-        Deletes every existing row and inserts the new rows in a single
-        transaction. Used during compaction to reassign document IDs after
-        soft-deleted vectors have been physically removed.
+        Return a page of live documents ordered by insertion (id).
 
         Args:
-            ids: New sequential document IDs.
-            metadatas: Metadata dictionaries, one per ID.
+            offset: Number of documents to skip.
+            limit: Maximum number of documents to return.
+
+        Returns:
+            List of ``(id, vector_pos, metadata)`` tuples.
+        """
+        session = self.SessionLocal()
+        try:
+            rows = (
+                session.query(Document)
+                .order_by(Document.id)
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+            return [(row.id, row.vector_pos, json.loads(row.metadata_json)) for row in rows]
+        finally:
+            session.close()
+
+    def list_all_live(self) -> list[tuple[str, int, dict[str, str]]]:
+        """
+        Return all live documents ordered by id.
+
+        Used during compaction to enumerate every document that needs to be
+        kept in the rewritten vector file.
+
+        Returns:
+            List of ``(id, vector_pos, metadata)`` tuples.
+        """
+        session = self.SessionLocal()
+        try:
+            rows = session.query(Document).order_by(Document.id).all()
+            return [(row.id, row.vector_pos, json.loads(row.metadata_json)) for row in rows]
+        finally:
+            session.close()
+
+    def rewrite(self, live_docs: list[tuple[str, int, dict[str, str]]]) -> None:
+        """
+        Atomically replace all stored metadata with updated vector positions.
+
+        Deletes every existing row and reinserts with the new ``vector_pos``
+        values in a single transaction. Document UUIDs are preserved; only
+        ``vector_pos`` changes to reflect the compacted file layout.
+
+        Args:
+            live_docs: List of ``(id, new_vector_pos, metadata)`` tuples.
         """
         session = self.SessionLocal()
         try:
             session.query(Document).delete()
-            for id, metadata in zip(ids, metadatas):
-                session.add(Document(id=id, metadata_json=json.dumps(metadata)))
+            for doc_id, vector_pos, metadata in live_docs:
+                session.add(Document(id=doc_id, vector_pos=vector_pos, metadata_json=json.dumps(metadata)))
             session.commit()
         except Exception:
             session.rollback()
@@ -140,7 +202,7 @@ class MetadataStore:
         finally:
             session.close()
 
-    def delete(self, id: int) -> bool:
+    def delete(self, id: str) -> bool:
         """
         Delete a document's metadata record.
 

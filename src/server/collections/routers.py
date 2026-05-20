@@ -257,7 +257,7 @@ async def list_documents(
 )
 async def get_document(
     name: str,
-    id: int,
+    id: str,
     http_request: Request,
 ) -> DocumentResponse:
     """
@@ -300,7 +300,7 @@ async def get_document(
 )
 async def delete_document(
     name: str,
-    id: int,
+    id: str,
     http_request: Request,
 ) -> None:
     """
@@ -345,7 +345,7 @@ async def delete_document(
 )
 async def update_document(
     name: str,
-    id: int,
+    id: str,
     request: UpdateDocumentRequest,
     http_request: Request,
 ) -> DocumentResponse:

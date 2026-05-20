@@ -12,9 +12,6 @@ class VectorStore:
     Manages storage and retrieval of vectors using memory-mapped files.
     """
     
-    # TODO: vector index should NOT be its position in the file, because compaction rewrites 
-    # the file and reassigns IDs.
-    
     def __init__(self, path: str, dim: int, dtype: npt.DTypeLike = np.float16):
         self.path = path
         self.dim = dim
@@ -73,7 +70,7 @@ class VectorStore:
             mode="r+",
             shape=(new_size, self.dim),
         )
-        
+
     def open(self, mode: MemMapMode = "r+") -> None:
         """
         Open the vector store with the specified mode.

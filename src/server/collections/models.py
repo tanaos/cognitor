@@ -23,10 +23,10 @@ class UpdateDocumentRequest(BaseModel):
     metadata: dict[str, Any]
 
 class AddDocumentResponse(BaseModel):
-    ids: list[int]
+    ids: list[str]
 
 class DocumentResponse(BaseModel):
-    id: int
+    id: str
     vector: list[float]
     metadata: dict[str, Any] | None
 
