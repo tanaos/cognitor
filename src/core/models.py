@@ -1,13 +1,14 @@
 from dataclasses import dataclass
-from typing import Any
+
+from .types import Vector, Metadata, DocumentId
 
 
 @dataclass
 class Document:
-    id: str
-    vector: list[float]
+    id: DocumentId
+    vector: Vector
     text: str
-    metadata: dict[str, Any]
+    metadata: Metadata
     
 @dataclass 
 class CollectionInfo:

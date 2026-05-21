@@ -188,7 +188,7 @@ async def add_documents(
         )
     document_ids = collection.add_documents(
         vectors=request.vectors,
-        metadatas=request.metadata,
+        metadatas=request.metadatas,
         texts=request.texts,
     )
     return AddDocumentResponse(ids=document_ids)

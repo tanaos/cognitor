@@ -5,6 +5,8 @@ from .vectors import VectorStore
 from .metadata import MetadataStore
 from .wal import WriteAheadLog
 
+from src.core.types import VectorArray
+
 
 class CollectionStorage:
     """
@@ -64,7 +66,7 @@ class CollectionStorage:
         self.wal.log_add_committed(seq, vector_offset=vector_start, count=n)
         return ids
 
-    def get_vectors(self, ids: List[str]) -> np.ndarray:
+    def get_vectors(self, ids: List[str]) -> VectorArray:
         """
         Retrieve vectors by their UUIDs.
         
@@ -72,7 +74,7 @@ class CollectionStorage:
             ids: List of document UUIDs.
             
         Returns:
-            np.ndarray of shape (len(ids), dim) containing the requested vectors.
+            VectorArray of shape (len(ids), dim) containing the requested vectors.
         """
         raw = self.metadata.get_vector_positions(ids)
         if any(p is None for p in raw):

@@ -1,9 +1,9 @@
-from typing import Any, cast
+from typing import cast
 import numpy as np
-import numpy.typing as npt
 
 from src.storage.collection import CollectionStorage
 from src.core.models import Document
+from src.core.types import Vector, Metadata, DocumentId, VectorArray
 
 
 class Collection:
@@ -15,8 +15,8 @@ class Collection:
         self._storage = storage
         
     def add_documents(
-        self, vectors: list[list[float]], texts: list[str], metadatas: list[dict[str, Any]]
-    ) -> list[str]:
+        self, vectors: list[Vector], texts: list[str], metadatas: list[Metadata]
+    ) -> list[DocumentId]:
         """
         Add multiple documents to the collection with their vectors, text and metadata.
 
@@ -32,7 +32,7 @@ class Collection:
             raise ValueError("number of vectors, texts, and metadatas must match")
 
         vector_array = cast(
-            npt.NDArray[np.generic],
+            VectorArray,
             np.asarray(vectors, dtype=self._storage.vectors.dtype),
         )
         if vector_array.ndim != 2:
@@ -44,7 +44,7 @@ class Collection:
 
         return self._storage.add(vectors=vector_array, texts=texts, metadatas=metadatas)
 
-    def get_document(self, doc_id: str) -> Document:
+    def get_document(self, doc_id: DocumentId) -> Document:
         """
         Retrieve a single document's vector, text and metadata by UUID.
 
@@ -96,7 +96,7 @@ class Collection:
             ) for doc in live_docs
         ]
 
-    def delete_document(self, doc_id: str) -> None:
+    def delete_document(self, doc_id: DocumentId) -> None:
         """
         Delete a document by UUID. This will only remove the document's metadata record,
         effectively marking the document as deleted. The vector data will remain in storage
@@ -110,7 +110,7 @@ class Collection:
         if not deleted:
             raise KeyError(f"Document with id {doc_id} does not exist")
 
-    def update_document(self, doc_id: str, metadata: dict[str, Any]) -> None:
+    def update_document(self, doc_id: DocumentId, metadata: Metadata) -> None:
         """
         Replace the metadata of an existing document.
 

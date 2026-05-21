@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Any
+
+from src.core.types import Vector, Metadata, DocumentId
 
 
 class Collection(BaseModel):
@@ -16,20 +17,20 @@ class CreateCollectionRequest(BaseModel):
     dim: int
     
 class AddDocumentRequest(BaseModel):
-    vectors: list[list[float]]
+    vectors: list[Vector]
     texts: list[str]
-    metadata: list[dict[str, Any]]
+    metadatas: list[Metadata]
 
 class UpdateDocumentRequest(BaseModel):
-    metadata: dict[str, Any]
+    metadata: Metadata
 
 class AddDocumentResponse(BaseModel):
-    ids: list[str]
+    ids: list[DocumentId]
 
 class DocumentResponse(BaseModel):
-    id: str
-    vector: list[float]
-    metadata: dict[str, Any]
+    id: DocumentId
+    vector: Vector
+    metadata: Metadata
     text: str
 
 class ListDocumentsResponse(BaseModel):
