@@ -63,13 +63,13 @@ async def get_collection(request: Request, name: str) -> Collection:
     """
     database = request.app.state.database
     try:
-        name_, dim, doc_count = database.get_collection_info(name)
+        coll_info = database.get_collection_info(name)
     except KeyError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.args[0]
         )
-    return Collection(name=name_, dim=dim, doc_count=doc_count)
+    return Collection(name=name, dim=coll_info.dim, doc_count=coll_info.doc_count)
 
 @collections_router.post(
     path="",
@@ -221,7 +221,7 @@ async def list_documents(
     """
     database = http_request.app.state.database
     try:
-        _, _, doc_count = database.get_collection_info(name)
+        coll_info = database.get_collection_info(name)
         collection = database.get_collection_service(name)
     except KeyError as e:
         raise HTTPException(
@@ -229,14 +229,14 @@ async def list_documents(
             detail=e.args[0]
         )
 
-    entries = collection.list_documents(offset=offset, limit=limit)
+    docs = collection.list_documents(offset=offset, limit=limit)
     documents = [
-        DocumentResponse(id=doc_id, vector=vector, text=text, metadata=metadata)
-        for doc_id, vector, text, metadata in entries
+        DocumentResponse(id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata)
+        for doc in docs
     ]
     return ListDocumentsResponse(
         documents=documents,
-        total=doc_count,
+        total=coll_info.doc_count,
         offset=offset,
         limit=limit,
     )
@@ -275,13 +275,15 @@ async def get_document(
             detail=str(e)
         )
     try:
-        vector, text, metadata = collection.get_document(id)
+        doc = collection.get_document(id)
     except KeyError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-    return DocumentResponse(id=id, vector=vector, text=text, metadata=metadata)
+    return DocumentResponse(
+        id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata
+    )
 
 
 @collections_router.delete(
@@ -371,5 +373,7 @@ async def update_document_metadata(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-    vector, text, metadata = collection.get_document(id)
-    return DocumentResponse(id=id, vector=vector, text=text, metadata=metadata)
+    doc = collection.get_document(id)
+    return DocumentResponse(
+        id=id, vector=doc.vector, text=doc.text, metadata=doc.metadata
+    )

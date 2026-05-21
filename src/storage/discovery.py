@@ -4,6 +4,7 @@ from typing import Optional
 from pathlib import Path
 
 from src.config.defaults import SQLLITE_DB_PATH
+from src.core.models import CollectionInfo
 
 
 def discover_collections(root_path: str) -> list[str]:
@@ -37,7 +38,7 @@ def discover_collections(root_path: str) -> list[str]:
     return collections
 
 
-def discover_collections_with_dim(root_path: str) -> list[tuple[str, int, int]]:
+def discover_collections_info(root_path: str) -> list[CollectionInfo]:
     """
     Discover valid collections, their dimensions, and document counts under the root path.
 
@@ -45,41 +46,47 @@ def discover_collections_with_dim(root_path: str) -> list[tuple[str, int, int]]:
         root_path: Root directory to search for collections.
 
     Returns:
-        Sorted list of (name, dim, doc_count) tuples for valid collections.
+        Sorted list of CollectionInfo objects for valid collections.
     """
     root = Path(root_path)
     if not root.exists():
         return []
 
-    results: list[tuple[str, int, int]] = []
+    results: list[CollectionInfo] = []
     for child in root.iterdir():
         if not child.is_dir():
             continue
 
         dim = _read_collection_dim_from_manifest(child / "collection.json")
         if dim is not None:
-            results.append((child.name, dim, _count_collection_documents(child)))
+            results.append(
+                CollectionInfo(
+                    name=child.name, dim=dim, doc_count=_count_collection_documents(child)
+                )
+            )
 
-    results.sort(key=lambda x: x[0])
+    results.sort(key=lambda x: x.name)
     return results
 
 
-def discover_collection_info(root_path: str, name: str) -> Optional[tuple[str, int, int]]:
+def discover_collection_info(root_path: str, name: str) -> Optional[CollectionInfo]:
     """
-    Return (name, dim, doc_count) for a single collection, or None if unavailable.
+    Return CollectionInfo for a single collection, or None if unavailable.
 
     Args:
         root_path: Root directory where collections are stored.
         name: Collection name.
 
     Returns:
-        Tuple of (name, dim, doc_count) if the collection is valid, otherwise None.
+        CollectionInfo object if the collection is valid, otherwise None.
     """
     collection_path = Path(root_path) / name
     dim = _read_collection_dim_from_manifest(collection_path / "collection.json")
     if dim is None:
         return None
-    return (name, dim, _count_collection_documents(collection_path))
+    return CollectionInfo(
+        name=name, dim=dim, doc_count=_count_collection_documents(collection_path)
+    )
 
 
 def discover_collection_dim(root_path: str, name: str) -> Optional[int]:

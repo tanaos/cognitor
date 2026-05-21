@@ -3,6 +3,7 @@ import numpy as np
 import numpy.typing as npt
 
 from src.storage.collection import CollectionStorage
+from src.core.models import Document
 
 
 class Collection:
@@ -43,7 +44,7 @@ class Collection:
 
         return self._storage.add(vectors=vector_array, texts=texts, metadatas=metadatas)
 
-    def get_document(self, doc_id: str) -> tuple[list[float], str, dict[str, Any]]:
+    def get_document(self, doc_id: str) -> Document:
         """
         Retrieve a single document's vector, text and metadata by UUID.
 
@@ -51,20 +52,20 @@ class Collection:
             doc_id: The UUID of the document.
 
         Returns:
-            A tuple of (vector, text, metadata).
+            A Document object.
         """
         out = self._storage.get_metadata_and_text([doc_id])[0]
         if out is None:
             raise KeyError(f"Document with id {doc_id} does not exist")
         metadata, text = out
         vector = self._storage.get_vectors([doc_id])[0].tolist()
-        return vector, text, metadata
+        return Document(id=doc_id, vector=vector, text=text, metadata=metadata)
 
     def list_documents(
         self,
         offset: int = 0,
         limit: int = 50,
-    ) -> list[tuple[str, list[float], str, dict[str, Any]]]:
+    ) -> list[Document]:
         """
         List non-deleted documents in insertion order using offset/limit pagination.
 
@@ -73,7 +74,7 @@ class Collection:
             limit: Maximum number of documents to return.
 
         Returns:
-            A list of tuples in the form (id, vector, text, metadata).
+            A list of Document objects.
         """
         if offset < 0:
             raise ValueError("offset must be greater than or equal to 0")
@@ -89,8 +90,10 @@ class Collection:
             return []
 
         return [
-            (doc_id, self._storage.vectors.vectors[vector_pos].tolist(), text, metadata)
-            for doc_id, vector_pos, text, metadata in live_docs
+            Document(
+                id=doc.id, vector=self._storage.vectors.vectors[doc.vector_pos].tolist(), 
+                text=doc.text, metadata=doc.metadata
+            ) for doc in live_docs
         ]
 
     def delete_document(self, doc_id: str) -> None:

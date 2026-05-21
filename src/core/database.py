@@ -3,8 +3,9 @@ import re
 from pathlib import Path
 
 from src.storage.collection import CollectionStorage
-from src.storage.discovery import discover_collection_dim, discover_collection_info, discover_collections_with_dim
+from src.storage.discovery import discover_collection_dim, discover_collection_info, discover_collections_info
 from src.core.collection import Collection
+from src.core.models import CollectionInfo
 
 
 class Database:
@@ -110,18 +111,15 @@ class Database:
 
 		return CollectionStorage(str(self._collection_path(name)), dim)
 
-	def get_collection_info(self, name: str) -> tuple[str, int, int]:
+	def get_collection_info(self, name: str) -> CollectionInfo:
 		"""
-		Retrieve a collection's name, dimension, and document count by name.
+		Retrieve a collection's information by name.
 
 		Args:
 			name: Collection name.
 
 		Returns:
-			Tuple of (name, dim, doc_count).
-
-		Raises:
-			KeyError: If the collection does not exist.
+			CollectionInfo object containing information on the collection.
 		"""
 		self._validate_collection_name(name)
 		info = discover_collection_info(str(self.root_path), name)
@@ -129,14 +127,15 @@ class Database:
 			raise KeyError(f"Collection '{name}' does not exist")
 		return info
 
-	def list_collections(self) -> list[tuple[str, int, int]]:
+	def list_collections(self) -> list[CollectionInfo]:
 		"""
 		List all discovered collections with their dimensions and document counts.
 
 		Returns:
-			Sorted list of (name, dim, doc_count) tuples.
+			Sorted list of CollectionInfo objects.
+
 		"""
-		return discover_collections_with_dim(str(self.root_path))
+		return discover_collections_info(str(self.root_path))
 
 	def get_collection_service(self, name: str) -> Collection:
 		"""
