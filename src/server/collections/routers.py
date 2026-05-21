@@ -330,8 +330,9 @@ async def delete_document(
     await http_request.app.state.compaction_scheduler.check_and_schedule(name)
 
 
+# TODO: if metadata end up being stored as vectors, this endpoint should be deleted
 @collections_router.patch(
-    path="/{name}/documents/{id}",
+    path="/{name}/documents/{id}/metadata",
     responses={
         status.HTTP_200_OK: {
             "description": "Document metadata updated successfully",
@@ -346,7 +347,7 @@ async def delete_document(
         }
     }
 )
-async def update_document(
+async def update_document_metadata(
     name: str,
     id: str,
     request: UpdateDocumentRequest,
