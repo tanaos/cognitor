@@ -1,5 +1,12 @@
-from fastapi import APIRouter, Request, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
+
+from src.server.dependencies import get_scheduler
+from src.execution.scheduler import CompactionScheduler
+
+SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 
 
 admin_router = APIRouter()
@@ -26,7 +33,7 @@ class CompactionResponse(BaseModel):
         },
     },
 )
-async def compact_collection(name: str, request: Request) -> CompactionResponse:
+async def compact_collection(name: str, scheduler: SchedulerDep) -> CompactionResponse:
     """
     Compact a collection by physically removing all soft-deleted vectors and
     reassigning document IDs.  Blocks until compaction is complete.
@@ -34,7 +41,6 @@ async def compact_collection(name: str, request: Request) -> CompactionResponse:
     This endpoint is intended for manual operator use.  Automatic threshold-
     based compaction is handled by the background scheduler.
     """
-    scheduler = request.app.state.compaction_scheduler
     try:
         result = await scheduler.compact_now(name)
     except KeyError:

@@ -16,6 +16,7 @@ from src.utils.logging import setup_logging
 from src.config.settings import get_config
 from src.storage.orm import init_db
 from src.core.database import Database
+from src.core.state import AppState
 from src.execution.scheduler import CompactionScheduler
 
 
@@ -26,11 +27,15 @@ _logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _logger.info("cognitor is starting up")
-    app.state.config = get_config()
-    app.state.database = Database()
-    app.state.compaction_scheduler = CompactionScheduler(
-        threshold=app.state.config.compaction_threshold,
-        database=app.state.database,
+    config = get_config()
+    database = Database()
+    app.state.app_state = AppState(
+        config=config,
+        database=database,
+        compaction_scheduler=CompactionScheduler(
+            threshold=config.compaction_threshold,
+            database=database,
+        ),
     )
     init_db()
     yield

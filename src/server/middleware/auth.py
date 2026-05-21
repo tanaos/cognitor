@@ -25,11 +25,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         Middleware to enforce API key authentication if enabled in the configuration.
         """
         
-        if not request.app.state.config.auth_enabled:
+        if not request.app.state.app_state.config.auth_enabled:
             return await call_next(request)
 
         token = _extract_token(request)
-        expected: str = request.app.state.config.api_key
+        expected: str = request.app.state.app_state.config.api_key
 
         if not token or not expected or not secrets.compare_digest(token, expected):
             return JSONResponse(

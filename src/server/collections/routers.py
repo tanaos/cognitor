@@ -1,8 +1,16 @@
-from fastapi import APIRouter, status, Request, HTTPException, Query
+from typing import Annotated
+
+from fastapi import APIRouter, status, HTTPException, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
     ListDocumentsResponse
+from src.server.dependencies import get_database, get_scheduler
+from src.core.database import Database
+from src.execution.scheduler import CompactionScheduler
+
+DatabaseDep = Annotated[Database, Depends(get_database)]
+SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 
 
 collections_router = APIRouter()
@@ -27,13 +35,12 @@ collections_router = APIRouter()
         }
     }
 )
-async def list_collections(request: Request) -> ListCollectionsResponse:
+async def list_collections(database: DatabaseDep) -> ListCollectionsResponse:
     """
     Get all collections
     """
-    database = request.app.state.database
     collection_entries = database.list_collections()
-    collections = [Collection(name=name, dim=dim, doc_count=doc_count) for name, dim, doc_count in collection_entries]
+    collections = [Collection(name=c.name, dim=c.dim, doc_count=c.doc_count) for c in collection_entries]
     return ListCollectionsResponse(collections=collections, total=len(collections))
 
 @collections_router.get(
@@ -57,11 +64,10 @@ async def list_collections(request: Request) -> ListCollectionsResponse:
         }
     }
 )
-async def get_collection(request: Request, name: str) -> Collection:
+async def get_collection(name: str, database: DatabaseDep) -> Collection:
     """
     Get a collection by name.
     """
-    database = request.app.state.database
     try:
         coll_info = database.get_collection_info(name)
     except KeyError as e:
@@ -102,12 +108,11 @@ async def get_collection(request: Request, name: str) -> Collection:
     }
 )
 async def create_collection(
-    request: Request, collection: CreateCollectionRequest
+    collection: CreateCollectionRequest, database: DatabaseDep
 ) -> Collection:
     """
     Create a new collection with the specified name and dimensionality.
     """
-    database = request.app.state.database
     try:
         database.create_collection(collection.name, collection.dim)
     except ValueError as e:
@@ -135,11 +140,10 @@ async def create_collection(
         }
     }
 )
-async def delete_collection(request: Request, name: str) -> None:
+async def delete_collection(name: str, database: DatabaseDep) -> None:
     """
     Delete a collection by name.
     """
-    database = request.app.state.database
     deleted = database.delete_collection(name)
     if not deleted:
         raise HTTPException(
@@ -173,12 +177,11 @@ async def delete_collection(request: Request, name: str) -> None:
 async def add_documents(
     name: str,
     request: AddDocumentRequest,
-    http_request: Request,
+    database: DatabaseDep,
 ) -> AddDocumentResponse:
     """
     Add a document to the specified collection.
     """
-    database = http_request.app.state.database
     try:
         collection = database.get_collection_service(name)
     except KeyError:
@@ -212,14 +215,13 @@ async def add_documents(
 )
 async def list_documents(
     name: str,
-    http_request: Request,
+    database: DatabaseDep,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=1000),
 ) -> ListDocumentsResponse:
     """
     Retrieve paginated documents from the specified collection.
     """
-    database = http_request.app.state.database
     try:
         coll_info = database.get_collection_info(name)
         collection = database.get_collection_service(name)
@@ -261,12 +263,11 @@ async def list_documents(
 async def get_document(
     name: str,
     id: str,
-    http_request: Request,
+    database: DatabaseDep,
 ) -> DocumentResponse:
     """
     Retrieve a document by its ID from the specified collection.
     """
-    database = http_request.app.state.database
     try:
         collection = database.get_collection_service(name)
     except KeyError as e:
@@ -306,12 +307,12 @@ async def get_document(
 async def delete_document(
     name: str,
     id: str,
-    http_request: Request,
+    database: DatabaseDep,
+    scheduler: SchedulerDep,
 ) -> None:
     """
     Delete a document by its ID from the specified collection.
     """
-    database = http_request.app.state.database
     try:
         collection = database.get_collection_service(name)
     except KeyError as e:
@@ -329,7 +330,7 @@ async def delete_document(
 
     # After a deletion, check if the collection has reached the compaction threshold and 
     # schedule compaction if needed.
-    await http_request.app.state.compaction_scheduler.check_and_schedule(name)
+    await scheduler.check_and_schedule(name)
 
 
 # TODO: if metadata end up being stored as vectors, this endpoint should be deleted
@@ -353,12 +354,11 @@ async def update_document_metadata(
     name: str,
     id: str,
     request: UpdateDocumentRequest,
-    http_request: Request,
+    database: DatabaseDep,
 ) -> DocumentResponse:
     """
     Replace the metadata of a document by its ID.
     """
-    database = http_request.app.state.database
     try:
         collection = database.get_collection_service(name)
     except KeyError as e:
