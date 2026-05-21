@@ -101,7 +101,9 @@ async def get_collection(request: Request, name: str) -> Collection:
         }
     }
 )
-async def create_collection(request: Request, collection: CreateCollectionRequest) -> Collection:
+async def create_collection(
+    request: Request, collection: CreateCollectionRequest
+) -> Collection:
     """
     Create a new collection with the specified name and dimensionality.
     """
@@ -187,6 +189,7 @@ async def add_documents(
     document_ids = collection.add_documents(
         vectors=request.vectors,
         metadatas=request.metadata,
+        texts=request.texts,
     )
     return AddDocumentResponse(ids=document_ids)
 
@@ -228,8 +231,8 @@ async def list_documents(
 
     entries = collection.list_documents(offset=offset, limit=limit)
     documents = [
-        DocumentResponse(id=doc_id, vector=vector, metadata=metadata)
-        for doc_id, vector, metadata in entries
+        DocumentResponse(id=doc_id, vector=vector, text=text, metadata=metadata)
+        for doc_id, vector, text, metadata in entries
     ]
     return ListDocumentsResponse(
         documents=documents,
@@ -272,13 +275,13 @@ async def get_document(
             detail=str(e)
         )
     try:
-        vector, metadata = collection.get_document(id)
+        vector, text, metadata = collection.get_document(id)
     except KeyError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-    return DocumentResponse(id=id, vector=vector, metadata=metadata)
+    return DocumentResponse(id=id, vector=vector, text=text, metadata=metadata)
 
 
 @collections_router.delete(
@@ -367,5 +370,5 @@ async def update_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-    vector, metadata = collection.get_document(id)
-    return DocumentResponse(id=id, vector=vector, metadata=metadata)
+    vector, text, metadata = collection.get_document(id)
+    return DocumentResponse(id=id, vector=vector, text=text, metadata=metadata)

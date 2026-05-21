@@ -42,7 +42,10 @@ class MetadataStore:
         finally:
             session.close()
 
-    def insert_batch(self, ids: list[str], vector_positions: list[int], metadatas: list[dict[str, str]]) -> None:
+    def insert_batch(
+        self, ids: list[str], vector_positions: list[int], texts: list[str], 
+        metadatas: list[dict[str, str]]
+    ) -> None:
         """
         Insert a batch of documents in a single atomic transaction.
 
@@ -52,13 +55,19 @@ class MetadataStore:
 
         Args:
             ids: Stable document UUIDs.
-            vector_positions: Position of each document's vector in the vector file.
+                vector_positions: Position of each document's vector in the vector file.
+            texts: Text contents, one per ID.
             metadatas: Metadata dictionaries, one per ID.
         """
         session = self.SessionLocal()
         try:
             for i in range(len(ids)):
-                session.add(Document(id=ids[i], vector_pos=vector_positions[i], metadata_json=json.dumps(metadatas[i])))
+                session.add(
+                    Document(
+                        id=ids[i], vector_pos=vector_positions[i], text=texts[i],
+                        metadata_json=json.dumps(metadatas[i])
+                    )
+                )
             session.commit()
         except Exception:
             session.rollback()
@@ -102,26 +111,28 @@ class MetadataStore:
         """
         session = self.SessionLocal()
         try:
-            rows = session.query(Document.id, Document.vector_pos).filter(Document.id.in_(ids)).all()
+            rows = session.query(
+                Document.id, Document.vector_pos
+            ).filter(Document.id.in_(ids)).all()
             pos_map = {row.id: row.vector_pos for row in rows}
             return [pos_map.get(i) for i in ids]
         finally:
             session.close()
 
-    def get(self, id: str) -> Optional[dict[str, str]]:
+    def get(self, id: str) -> Optional[tuple[dict[str, str], str]]:
         """
-        Retrieve a document's metadata.
+        Retrieve a document's metadata and text.
         
         Args:
             id: Document UUID
             
         Returns:
-            Metadata dictionary or None if not found
+            Metadata dictionary and text or None if not found
         """
         session = self.SessionLocal()
         try:
             doc = session.query(Document).filter(Document.id == id).first()
-            return json.loads(doc.metadata_json) if doc else None
+            return (json.loads(doc.metadata_json), doc.text) if doc else None
         finally:
             session.close()
 
@@ -138,7 +149,7 @@ class MetadataStore:
         finally:
             session.close()
 
-    def list_live(self, offset: int, limit: int) -> list[tuple[str, int, dict[str, str]]]:
+    def list_live(self, offset: int, limit: int) -> list[tuple[str, int, str, dict[str, str]]]:
         """
         Return a page of live documents ordered by insertion (id).
 
@@ -147,7 +158,7 @@ class MetadataStore:
             limit: Maximum number of documents to return.
 
         Returns:
-            List of ``(id, vector_pos, metadata)`` tuples.
+            List of (id, vector_pos, text, metadata) tuples.
         """
         session = self.SessionLocal()
         try:
@@ -158,11 +169,11 @@ class MetadataStore:
                 .limit(limit)
                 .all()
             )
-            return [(row.id, row.vector_pos, json.loads(row.metadata_json)) for row in rows]
+            return [(row.id, row.vector_pos, row.text, json.loads(row.metadata_json)) for row in rows]
         finally:
             session.close()
 
-    def list_all_live(self) -> list[tuple[str, int, dict[str, str]]]:
+    def list_all_live(self) -> list[tuple[str, int, str, dict[str, str]]]:
         """
         Return all live documents ordered by id.
 
@@ -170,16 +181,16 @@ class MetadataStore:
         kept in the rewritten vector file.
 
         Returns:
-            List of ``(id, vector_pos, metadata)`` tuples.
+            List of (id, vector_pos, text, metadata) tuples.
         """
         session = self.SessionLocal()
         try:
             rows = session.query(Document).order_by(Document.id).all()
-            return [(row.id, row.vector_pos, json.loads(row.metadata_json)) for row in rows]
+            return [(row.id, row.vector_pos, row.text, json.loads(row.metadata_json)) for row in rows]
         finally:
             session.close()
 
-    def rewrite(self, live_docs: list[tuple[str, int, dict[str, str]]]) -> None:
+    def rewrite(self, live_docs: list[tuple[str, int, str, dict[str, str]]]) -> None:
         """
         Atomically replace all stored metadata with updated vector positions.
 
@@ -188,13 +199,15 @@ class MetadataStore:
         ``vector_pos`` changes to reflect the compacted file layout.
 
         Args:
-            live_docs: List of ``(id, new_vector_pos, metadata)`` tuples.
+            live_docs: List of ``(id, new_vector_pos, text, metadata)`` tuples.
         """
         session = self.SessionLocal()
         try:
             session.query(Document).delete()
-            for doc_id, vector_pos, metadata in live_docs:
-                session.add(Document(id=doc_id, vector_pos=vector_pos, metadata_json=json.dumps(metadata)))
+            for doc_id, vector_pos, text, metadata in live_docs:
+                session.add(
+                    Document(id=doc_id, vector_pos=vector_pos, text=text, metadata_json=json.dumps(metadata))
+                )
             session.commit()
         except Exception:
             session.rollback()

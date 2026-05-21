@@ -38,12 +38,15 @@ class CollectionStorage:
         """
         return [str(uuid.uuid4()) for _ in range(n)]
 
-    def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]) -> List[str]:
+    def add(
+        self, vectors: np.ndarray, texts: list[str], metadatas: List[Dict[str, Any]]
+    ) -> List[str]:
         """
         Add a batch of vectors and their metadata to storage.
         
         Args:
             vectors: np.ndarray of shape (n, dim)
+            texts: List of text contents, length n
             metadatas: List of metadata dicts, length n
             
         Returns:
@@ -57,7 +60,7 @@ class CollectionStorage:
         self.vectors.append(vectors)
         # Single transaction: either all metadata rows are committed or none are,
         # so a crash here cannot leave partial metadata without corresponding vectors.
-        self.metadata.insert_batch(ids, vector_positions, metadatas)
+        self.metadata.insert_batch(ids, vector_positions, texts, metadatas)
         self.wal.log_add_committed(seq, vector_offset=vector_start, count=n)
         return ids
 
@@ -80,15 +83,17 @@ class CollectionStorage:
             raise ValueError("No vectors stored.")
         return self.vectors.vectors[positions]
 
-    def get_metadata(self, ids: List[str]) -> List[Dict[str, Any] | None]:
+    def get_metadata_and_text(
+        self, ids: List[str]
+    ) -> List[tuple[Dict[str, Any], str] | None]:
         """
-        Retrieve metadata for a list of UUIDs.
+        Retrieve metadata and text for a list of UUIDs.
         
         Args:
             ids: List of document UUIDs.
             
         Returns:
-            List of metadata dicts (or None if not found for an ID).
+            List of tuples containing metadata dicts and text (or None if not found for an ID).
         """
         return [self.metadata.get(i) for i in ids]
 

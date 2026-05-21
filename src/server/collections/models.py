@@ -17,6 +17,7 @@ class CreateCollectionRequest(BaseModel):
     
 class AddDocumentRequest(BaseModel):
     vectors: list[list[float]]
+    texts: list[str]
     metadata: list[dict[str, Any]]
 
 class UpdateDocumentRequest(BaseModel):
@@ -28,7 +29,8 @@ class AddDocumentResponse(BaseModel):
 class DocumentResponse(BaseModel):
     id: str
     vector: list[float]
-    metadata: dict[str, Any] | None
+    metadata: dict[str, Any]
+    text: str
 
 class ListDocumentsResponse(BaseModel):
     documents: list[DocumentResponse]

@@ -14,20 +14,21 @@ class Collection:
         self._storage = storage
         
     def add_documents(
-        self, vectors: list[list[float]], metadatas: list[dict[str, Any]]
+        self, vectors: list[list[float]], texts: list[str], metadatas: list[dict[str, Any]]
     ) -> list[str]:
         """
-        Add multiple documents to the collection with their vectors and metadata.
+        Add multiple documents to the collection with their vectors, text and metadata.
 
         Args:
             vectors: A list of vector representations for the documents.
+            texts: A list of text contents for the documents.
             metadatas: A list of metadata dictionaries corresponding to each document.
 
         Returns:
             A list of UUID strings for the added documents.
         """
-        if len(vectors) != len(metadatas):
-            raise ValueError("number of vectors and metadatas must match")
+        if len(vectors) != len(texts) or len(vectors) != len(metadatas):
+            raise ValueError("number of vectors, texts, and metadatas must match")
 
         vector_array = cast(
             npt.NDArray[np.generic],
@@ -40,29 +41,30 @@ class Collection:
                 f"size mismatch: each vector in this collection must have dimension {self._storage.vectors.dim}"
             )
 
-        return self._storage.add(vectors=vector_array, metadatas=metadatas)
+        return self._storage.add(vectors=vector_array, texts=texts, metadatas=metadatas)
 
-    def get_document(self, doc_id: str) -> tuple[list[float], dict[str, Any]]:
+    def get_document(self, doc_id: str) -> tuple[list[float], str, dict[str, Any]]:
         """
-        Retrieve a single document's vector and metadata by UUID.
+        Retrieve a single document's vector, text and metadata by UUID.
 
         Args:
             doc_id: The UUID of the document.
 
         Returns:
-            A tuple of (vector, metadata).
+            A tuple of (vector, text, metadata).
         """
-        metadata = self._storage.get_metadata([doc_id])[0]
-        if metadata is None:
+        out = self._storage.get_metadata_and_text([doc_id])[0]
+        if out is None:
             raise KeyError(f"Document with id {doc_id} does not exist")
+        metadata, text = out
         vector = self._storage.get_vectors([doc_id])[0].tolist()
-        return vector, metadata
+        return vector, text, metadata
 
     def list_documents(
         self,
         offset: int = 0,
         limit: int = 50,
-    ) -> list[tuple[str, list[float], dict[str, Any]]]:
+    ) -> list[tuple[str, list[float], str, dict[str, Any]]]:
         """
         List non-deleted documents in insertion order using offset/limit pagination.
 
@@ -71,7 +73,7 @@ class Collection:
             limit: Maximum number of documents to return.
 
         Returns:
-            A list of tuples in the form (id, vector, metadata).
+            A list of tuples in the form (id, vector, text, metadata).
         """
         if offset < 0:
             raise ValueError("offset must be greater than or equal to 0")
@@ -87,8 +89,8 @@ class Collection:
             return []
 
         return [
-            (doc_id, self._storage.vectors.vectors[vector_pos].tolist(), metadata)
-            for doc_id, vector_pos, metadata in live_docs
+            (doc_id, self._storage.vectors.vectors[vector_pos].tolist(), text, metadata)
+            for doc_id, vector_pos, text, metadata in live_docs
         ]
 
     def delete_document(self, doc_id: str) -> None:
@@ -116,6 +118,6 @@ class Collection:
         Raises:
             KeyError: If the document does not exist or has been deleted.
         """
-        if self._storage.get_metadata([doc_id])[0] is None:
+        if self._storage.get_metadata_and_text([doc_id])[0] is None:
             raise KeyError(f"Document with id {doc_id} does not exist")
         self._storage.metadata.update_metadata(doc_id, metadata)
