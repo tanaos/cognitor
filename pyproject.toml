@@ -11,3 +11,6 @@ dependencies = [
     "pydantic-settings>=2.14.1",
     "sqlalchemy>=2.0.0",
 ]
+
+[tool.pyright]
+stubPath = "stubs"
