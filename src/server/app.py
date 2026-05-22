@@ -18,6 +18,15 @@ from src.storage.orm import init_db
 from src.core.database import Database
 from src.core.state import AppState
 from src.execution.scheduler import CompactionScheduler
+from src.core.exceptions import (
+    CollectionAlreadyExistsError,
+    CollectionNotFoundError,
+    DocumentNotFoundError,
+    InvalidCollectionNameError,
+    InvalidDimensionError,
+    InvalidDocumentInputError,
+    DimensionMismatchError,
+)
 
 
 setup_logging()
@@ -99,6 +108,32 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         ).model_dump()
     )
     
+# Handlers for domain exceptions.
+@app.exception_handler(CollectionNotFoundError)
+@app.exception_handler(DocumentNotFoundError)
+async def not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=ErrorResponse(message=str(exc)).model_dump()
+    )
+
+@app.exception_handler(CollectionAlreadyExistsError)
+async def conflict_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=ErrorResponse(message=str(exc)).model_dump()
+    )
+
+@app.exception_handler(InvalidCollectionNameError)
+@app.exception_handler(InvalidDimensionError)
+@app.exception_handler(InvalidDocumentInputError)
+@app.exception_handler(DimensionMismatchError)
+async def domain_bad_request_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=ErrorResponse(message=str(exc)).model_dump()
+    )
+
 # Catch-all handler for unhandled exceptions.
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
