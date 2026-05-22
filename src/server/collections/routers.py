@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, status, HTTPException, Query, Depends
+from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
@@ -136,12 +136,7 @@ async def delete_collection(name: str, database: DatabaseDep) -> None:
     """
     Delete a collection by name.
     """
-    deleted = database.delete_collection(name)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Collection '{name}' does not exist"
-        )
+    database.delete_collection(name)
 
 
 @collections_router.post(
