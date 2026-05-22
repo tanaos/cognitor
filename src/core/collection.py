@@ -1,14 +1,15 @@
-from typing import cast
+from typing import cast, Optional
 import numpy as np
 
 from src.storage.collection import CollectionStorage
-from src.core.models import Document
+from src.core.models import Document, SearchResult
 from src.core.types import Vector, Metadata, DocumentId, VectorArray
 from src.core.exceptions import (
     DimensionMismatchError,
     DocumentNotFoundError,
     InvalidDocumentInputError,
 )
+from src.search.filters import FilterSpec
 
 
 class Collection:
@@ -129,3 +130,36 @@ class Collection:
         if self._storage.get_metadata_and_text([doc_id])[0] is None:
             raise DocumentNotFoundError(doc_id)
         self._storage.metadata.update_metadata(doc_id, metadata)
+
+    def search(
+        self,
+        query_vector: Vector,
+        top_k: int = 10,
+        filters: Optional[FilterSpec] = None,
+        include_vectors: bool = False,
+    ) -> list[SearchResult]:
+        """
+        Search for the most similar documents to a query vector.
+
+        Args:
+            query_vector: Query vector with the same dimensionality as the collection.
+            top_k: Maximum number of results to return.
+            filters: Optional metadata equality filters, e.g. {"genre": "sci-fi"}.
+            include_vectors: Whether to include raw vectors in the results.
+
+        Returns:
+            List of SearchResult objects ordered by descending similarity score.
+        """
+        from src.search.engine import SearchEngine
+
+        if len(query_vector) != self._storage.vectors.dim:
+            raise DimensionMismatchError(
+                f"query vector must have dimension {self._storage.vectors.dim}"
+            )
+
+        engine = SearchEngine(
+            index=self._storage.index,
+            metadata_store=self._storage.metadata,
+            vector_store=self._storage.vectors,
+        )
+        return engine.search(query_vector, top_k, filters, include_vectors)

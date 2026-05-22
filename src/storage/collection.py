@@ -1,11 +1,15 @@
 from typing import List, Dict, Any
 import uuid
+from pathlib import Path
 import numpy as np
+
 from .vectors import VectorStore
 from .metadata import MetadataStore
 from .wal import WriteAheadLog
 
+from src.indexes.faiss_hnsw import FaissHNSWIndex
 from src.core.types import VectorArray
+from src.config.defaults import INDEX_FILE
 
 
 class CollectionStorage:
@@ -21,12 +25,34 @@ class CollectionStorage:
             path: Directory path for storage files.
             dim: Dimensionality of the vectors.
         """
+        self.path = path
         self.vectors: VectorStore = VectorStore(path, dim)
         self.metadata: MetadataStore = MetadataStore(path)
         self.wal: WriteAheadLog = WriteAheadLog(path)
         # Recover before opening: rolls back any uncommitted vectors and removes
         # orphaned metadata rows so both stores are consistent.
         self.wal.recover(self.vectors, self.metadata)
+        self.index: FaissHNSWIndex = FaissHNSWIndex(dim)
+        index_file = Path(path) / INDEX_FILE
+        if index_file.exists():
+            self.index.load(path)
+        else:
+            self._rebuild_index()
+
+    def _rebuild_index(self) -> None:
+        """
+        Build the FAISS index from scratch using the current vector store and metadata.
+        """
+        docs = self.metadata.list_all_live()
+        if not docs:
+            return
+        self.vectors.open("r")
+        if self.vectors.vectors is None:
+            return
+        positions = np.array([doc.vector_pos for doc in docs], dtype=np.int64)
+        vectors_f32 = self.vectors.vectors[positions].astype(np.float32)
+        self.index.rebuild(positions, vectors_f32)
+        self.index.save(self.path)
 
     def _generate_ids(self, n: int) -> List[str]:
         """
@@ -64,6 +90,11 @@ class CollectionStorage:
         # so a crash here cannot leave partial metadata without corresponding vectors.
         self.metadata.insert_batch(ids, vector_positions, texts, metadatas)
         self.wal.log_add_committed(seq, vector_offset=vector_start, count=n)
+
+        positions_arr = np.array(vector_positions, dtype=np.int64)
+        self.index.add(positions_arr, vectors.astype(np.float32))
+        self.index.save(self.path)
+
         return ids
 
     def get_vectors(self, ids: List[str]) -> VectorArray:

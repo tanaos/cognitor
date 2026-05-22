@@ -198,6 +198,33 @@ class MetadataStore:
         finally:
             session.close()
 
+    def get_by_vector_positions(self, positions: list[int]) -> list[Document | None]:
+        """
+        Retrieve documents by their vector file positions.
+
+        Args:
+            positions: List of vector_pos values to look up.
+
+        Returns:
+            List of Document objects in the same order as positions, or None for
+            any position that has no live (non-deleted) document.
+        """
+        session = self.SessionLocal()
+        try:
+            rows = session.query(Document).filter(
+                Document.vector_pos.in_(positions)
+            ).all()
+            pos_map = {
+                row.vector_pos: Document(
+                    id=row.id, vector_pos=row.vector_pos, text=row.text,
+                    metadata=json.loads(row.metadata_json),
+                )
+                for row in rows
+            }
+            return [pos_map.get(p) for p in positions]
+        finally:
+            session.close()
+
     def rewrite(self, live_docs: list[Document]) -> None:
         """
         Atomically replace all stored metadata with updated vector positions.

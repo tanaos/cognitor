@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.storage.collection import CollectionStorage
+from src.storage.models import Document
 
 
 @dataclass
@@ -46,8 +47,8 @@ def compact(name: str, storage: CollectionStorage) -> CompactionResult:
     if live_count > 0:
         storage.vectors.open("r")
         assert storage.vectors.vectors is not None
-        for _doc_id, vector_pos, _meta in live_docs:
-            live_vectors.append(storage.vectors.vectors[vector_pos].copy())
+        for doc in live_docs:
+            live_vectors.append(storage.vectors.vectors[doc.vector_pos].copy())
 
     new_vectors: np.ndarray = (
         np.stack(live_vectors).astype(storage.vectors.dtype)
@@ -57,8 +58,8 @@ def compact(name: str, storage: CollectionStorage) -> CompactionResult:
 
     # Build updated live_docs with new sequential vector positions (0, 1, 2, …).
     updated_live_docs = [
-        (doc_id, new_pos, meta)
-        for new_pos, (doc_id, _old_pos, meta) in enumerate(live_docs)
+        Document(id=doc.id, vector_pos=new_pos, text=doc.text, metadata=doc.metadata)
+        for new_pos, doc in enumerate(live_docs)
     ]
 
     # Atomically replace the vector file then rewrite metadata with new vector_pos values.
@@ -69,6 +70,10 @@ def compact(name: str, storage: CollectionStorage) -> CompactionResult:
     # Compact the WAL to remove any pending entries that are now obsolete after the rewrite,
     # so that it doesn't grow indefinitely.
     storage.wal.compact()
+
+    # Rebuild the FAISS index from scratch: vector_pos values were renumbered
+    # during compaction so the old index holds stale IDs.
+    storage._rebuild_index()
 
     return CompactionResult(
         collection_name=name,

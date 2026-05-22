@@ -4,7 +4,7 @@ from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
-    ListDocumentsResponse
+    ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
 from src.server.dependencies import get_database, get_scheduler
 from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
@@ -315,4 +315,56 @@ async def update_document_metadata(
     doc = collection.get_document(id)
     return DocumentResponse(
         id=id, vector=doc.vector, text=doc.text, metadata=doc.metadata
+    )
+
+
+@collections_router.post(
+    path="/{name}/search",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Search results returned successfully",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Query vector dimension mismatch",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "query vector must have dimension 128"}
+                }
+            }
+        },
+    }
+)
+async def search_collection(
+    name: str,
+    request: SearchRequest,
+    database: DatabaseDep,
+) -> SearchResponse:
+    """
+    Search for the most similar documents to a query vector.
+    Optionally filter results by metadata key-value pairs.
+    """
+    collection = database.get_collection_service(name)
+    results = collection.search(
+        query_vector=request.query_vector,
+        top_k=request.top_k,
+        filters=request.filters,
+        include_vectors=request.include_vectors,
+    )
+    return SearchResponse(
+        results=[
+            SearchResultResponse(
+                id=r.id, score=r.score, text=r.text,
+                metadata=r.metadata, vector=r.vector,
+            )
+            for r in results
+        ],
+        total=len(results),
     )

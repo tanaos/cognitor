@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.core.types import Vector, Metadata, DocumentId
 
@@ -38,3 +38,20 @@ class ListDocumentsResponse(BaseModel):
     total: int
     offset: int
     limit: int
+
+class SearchRequest(BaseModel):
+    query_vector: Vector
+    top_k: int = Field(default=10, ge=1)
+    filters: Metadata | None = None
+    include_vectors: bool = False
+
+class SearchResultResponse(BaseModel):
+    id: DocumentId
+    score: float
+    text: str
+    metadata: Metadata
+    vector: Vector | None = None
+
+class SearchResponse(BaseModel):
+    results: list[SearchResultResponse]
+    total: int
