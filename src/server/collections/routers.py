@@ -7,6 +7,14 @@ from .models import ListCollectionsResponse, Collection, CreateCollectionRequest
     ListDocumentsResponse
 from src.server.dependencies import get_database, get_scheduler
 from src.core.database import Database
+from src.core.exceptions import (
+    CognitorError,
+    CollectionAlreadyExistsError,
+    CollectionNotFoundError,
+    DocumentNotFoundError,
+    InvalidCollectionNameError,
+    InvalidDimensionError,
+)
 from src.execution.scheduler import CompactionScheduler
 
 DatabaseDep = Annotated[Database, Depends(get_database)]
@@ -40,7 +48,11 @@ async def list_collections(database: DatabaseDep) -> ListCollectionsResponse:
     Get all collections
     """
     collection_entries = database.list_collections()
-    collections = [Collection(name=c.name, dim=c.dim, doc_count=c.doc_count) for c in collection_entries]
+    collections = [
+        Collection(
+            name=c.name, dim=c.dim, doc_count=c.doc_count
+        ) for c in collection_entries
+    ]
     return ListCollectionsResponse(collections=collections, total=len(collections))
 
 @collections_router.get(
@@ -70,10 +82,10 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
     """
     try:
         coll_info = database.get_collection_info(name)
-    except KeyError as e:
+    except CollectionNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.args[0]
+            detail=str(e)
         )
     return Collection(name=name, dim=coll_info.dim, doc_count=coll_info.doc_count)
 
@@ -115,10 +127,10 @@ async def create_collection(
     """
     try:
         database.create_collection(collection.name, collection.dim)
-    except ValueError as e:
-        if "already exists" in str(e):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.args[0])
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.args[0])
+    except CollectionAlreadyExistsError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except (InvalidCollectionNameError, InvalidDimensionError, CognitorError) as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     
     return Collection(name=collection.name, dim=collection.dim, doc_count=0)
 
@@ -184,7 +196,7 @@ async def add_documents(
     """
     try:
         collection = database.get_collection_service(name)
-    except KeyError:
+    except CollectionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f"Collection '{name}' does not exist"
@@ -225,10 +237,10 @@ async def list_documents(
     try:
         coll_info = database.get_collection_info(name)
         collection = database.get_collection_service(name)
-    except KeyError as e:
+    except CollectionNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.args[0]
+            detail=str(e)
         )
 
     docs = collection.list_documents(offset=offset, limit=limit)
@@ -270,14 +282,14 @@ async def get_document(
     """
     try:
         collection = database.get_collection_service(name)
-    except KeyError as e:
+    except CollectionNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
     try:
         doc = collection.get_document(id)
-    except KeyError as e:
+    except DocumentNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
@@ -315,14 +327,14 @@ async def delete_document(
     """
     try:
         collection = database.get_collection_service(name)
-    except KeyError as e:
+    except CollectionNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.args[0]
         )
     try:
         collection.delete_document(id)
-    except KeyError as e:
+    except DocumentNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
@@ -361,14 +373,14 @@ async def update_document_metadata(
     """
     try:
         collection = database.get_collection_service(name)
-    except KeyError as e:
+    except CollectionNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.args[0]
         )
     try:
         collection.update_document(id, request.metadata)
-    except KeyError as e:
+    except DocumentNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)

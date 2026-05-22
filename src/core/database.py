@@ -6,6 +6,13 @@ from src.storage.collection import CollectionStorage
 from src.storage.discovery import discover_collection_dim, discover_collection_info, discover_collections_info
 from src.core.collection import Collection
 from src.core.models import CollectionInfo
+from src.core.exceptions import (
+	CollectionAlreadyExistsError,
+	CollectionNotFoundError,
+	CognitorError,
+	InvalidCollectionNameError,
+	InvalidDimensionError,
+)
 
 
 class Database:
@@ -31,9 +38,9 @@ class Database:
 
 	def _validate_collection_name(self, name: str) -> None:
 		if not name:
-			raise ValueError("Collection name cannot be empty")
+			raise InvalidCollectionNameError("Collection name cannot be empty")
 		if not self._VALID_NAME_PATTERN.fullmatch(name):
-			raise ValueError(
+			raise InvalidCollectionNameError(
 				"Collection name must contain only letters, numbers, underscores, or hyphens"
 			)
 
@@ -50,7 +57,7 @@ class Database:
 		"""
 		self._validate_collection_name(name)
 		if dim <= 0:
-			raise ValueError("dim must be a positive integer")
+			raise InvalidDimensionError("dim must be a positive integer")
 
 		collection_path = self._collection_path(name)
 		manifest_path = collection_path / "collection.json"
@@ -59,11 +66,11 @@ class Database:
 			existing_dim = discover_collection_dim(str(self.root_path), name)
 			if existing_dim is not None:
 				if existing_dim != dim:
-					raise ValueError(
+					raise InvalidDimensionError(
 						f"Collection '{name}' already exists with dim={existing_dim}, requested dim={dim}"
 					)
-				raise ValueError(f"Collection '{name}' already exists")
-			raise ValueError(
+				raise CollectionAlreadyExistsError(name)
+			raise CognitorError(
 				f"Collection directory '{name}' already exists but is missing a valid manifest"
 			)
 
@@ -107,7 +114,7 @@ class Database:
 		self._validate_collection_name(name)
 		dim = discover_collection_dim(str(self.root_path), name)
 		if dim is None:
-			raise KeyError(f"Collection '{name}' does not exist")
+			raise CollectionNotFoundError(name)
 
 		return CollectionStorage(str(self._collection_path(name)), dim)
 
@@ -124,7 +131,7 @@ class Database:
 		self._validate_collection_name(name)
 		info = discover_collection_info(str(self.root_path), name)
 		if info is None:
-			raise KeyError(f"Collection '{name}' does not exist")
+			raise CollectionNotFoundError(name)
 		return info
 
 	def list_collections(self) -> list[CollectionInfo]:

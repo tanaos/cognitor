@@ -4,6 +4,11 @@ import numpy as np
 from src.storage.collection import CollectionStorage
 from src.core.models import Document
 from src.core.types import Vector, Metadata, DocumentId, VectorArray
+from src.core.exceptions import (
+    DimensionMismatchError,
+    DocumentNotFoundError,
+    InvalidDocumentInputError,
+)
 
 
 class Collection:
@@ -29,16 +34,16 @@ class Collection:
             A list of UUID strings for the added documents.
         """
         if len(vectors) != len(texts) or len(vectors) != len(metadatas):
-            raise ValueError("number of vectors, texts, and metadatas must match")
+            raise InvalidDocumentInputError("number of vectors, texts, and metadatas must match")
 
         vector_array = cast(
             VectorArray,
             np.asarray(vectors, dtype=self._storage.vectors.dtype),
         )
         if vector_array.ndim != 2:
-            raise ValueError(f"vectors must be two-dimensional (got shape {vector_array.shape}, input={vectors})")
+            raise InvalidDocumentInputError(f"vectors must be two-dimensional (got shape {vector_array.shape}, input={vectors})")
         if vector_array.shape[1] != self._storage.vectors.dim:
-            raise ValueError(
+            raise DimensionMismatchError(
                 f"size mismatch: each vector in this collection must have dimension {self._storage.vectors.dim}"
             )
 
@@ -56,7 +61,7 @@ class Collection:
         """
         out = self._storage.get_metadata_and_text([doc_id])[0]
         if out is None:
-            raise KeyError(f"Document with id {doc_id} does not exist")
+            raise DocumentNotFoundError(doc_id)
         metadata, text = out
         vector = self._storage.get_vectors([doc_id])[0].tolist()
         return Document(id=doc_id, vector=vector, text=text, metadata=metadata)
@@ -77,9 +82,9 @@ class Collection:
             A list of Document objects.
         """
         if offset < 0:
-            raise ValueError("offset must be greater than or equal to 0")
+            raise InvalidDocumentInputError("offset must be greater than or equal to 0")
         if limit <= 0:
-            raise ValueError("limit must be greater than 0")
+            raise InvalidDocumentInputError("limit must be greater than 0")
 
         live_docs = self._storage.metadata.list_live(offset, limit)
         if not live_docs:
@@ -108,7 +113,7 @@ class Collection:
         """
         deleted = self._storage.delete_document(doc_id)
         if not deleted:
-            raise KeyError(f"Document with id {doc_id} does not exist")
+            raise DocumentNotFoundError(doc_id)
 
     def update_document(self, doc_id: DocumentId, metadata: Metadata) -> None:
         """
@@ -122,5 +127,5 @@ class Collection:
             KeyError: If the document does not exist or has been deleted.
         """
         if self._storage.get_metadata_and_text([doc_id])[0] is None:
-            raise KeyError(f"Document with id {doc_id} does not exist")
+            raise DocumentNotFoundError(doc_id)
         self._storage.metadata.update_metadata(doc_id, metadata)
