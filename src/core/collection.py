@@ -16,7 +16,7 @@ class Collection:
     """
     Manages operations on documents belonging to a specific collection.
     """
-    
+
     def __init__(self, storage: CollectionStorage) -> None:
         self._storage = storage
         

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from src.core.models import SearchResult
@@ -7,7 +7,9 @@ if TYPE_CHECKING:
 FilterSpec = dict[str, Any]
 
 
-def apply(results: list["SearchResult"], spec: FilterSpec | None) -> list["SearchResult"]:
+def apply(
+    results: list["SearchResult"], spec: Optional[FilterSpec] = None
+) -> list["SearchResult"]:
     """
     Return only the results whose metadata matches all key-value pairs in spec.
     

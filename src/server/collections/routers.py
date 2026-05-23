@@ -42,7 +42,7 @@ async def list_collections(database: DatabaseDep) -> ListCollectionsResponse:
     collection_entries = database.list_collections()
     collections = [
         Collection(
-            name=c.name, dim=c.dim, doc_count=c.doc_count
+            name=c.name, dim=c.dim, doc_count=c.doc_count, emb_model=c.emb_model
         ) for c in collection_entries
     ]
     return ListCollectionsResponse(collections=collections, total=len(collections))
@@ -73,7 +73,10 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
     Get a collection by name.
     """
     coll_info = database.get_collection_info(name)
-    return Collection(name=name, dim=coll_info.dim, doc_count=coll_info.doc_count)
+    return Collection(
+        name=name, dim=coll_info.dim, doc_count=coll_info.doc_count, 
+        emb_model=coll_info.emb_model
+    )
 
 @collections_router.post(
     path="",
@@ -111,8 +114,11 @@ async def create_collection(
     """
     Create a new collection with the specified name and dimensionality.
     """
-    database.create_collection(collection.name, collection.dim)
-    return Collection(name=collection.name, dim=collection.dim, doc_count=0)
+    database.create_collection(collection.name, collection.dim, collection.emb_model)
+    return Collection(
+        name=collection.name, dim=collection.dim, doc_count=0, 
+        emb_model=collection.emb_model
+    )
 
 
 @collections_router.delete(

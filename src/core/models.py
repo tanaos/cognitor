@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 from .types import Vector, Metadata, DocumentId
 
@@ -16,10 +17,11 @@ class SearchResult:
     score: float
     text: str
     metadata: Metadata
-    vector: Vector | None = field(default=None)
+    vector: Optional[Vector] = field(default=None)
 
 @dataclass 
 class CollectionInfo:
     name: str
     dim: int
     doc_count: int
+    emb_model: Optional[str] = field(default=None)

@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from typing import Optional
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,7 +82,7 @@ async def value_error_handler(request: Request, exc: ValueError):
 @app.exception_handler(ValidationException)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: ValidationException):
-    validation_errors: list[dict[str, str | None]] = []
+    validation_errors: list[dict[str, Optional[str]]] = []
 
     for error in exc.errors():
         validation_errors.append({

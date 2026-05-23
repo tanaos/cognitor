@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from src.core.types import Vector, Metadata, DocumentId
@@ -7,15 +9,17 @@ class Collection(BaseModel):
     name: str
     dim: int
     doc_count: int
-    
+    emb_model: Optional[str] = None
+
 class ListCollectionsResponse(BaseModel):
     collections: list[Collection]
     total: int
-    
+
 class CreateCollectionRequest(BaseModel):
     name: str
     dim: int
-    
+    emb_model: Optional[str] = None
+
 class AddDocumentRequest(BaseModel):
     vectors: list[Vector]
     texts: list[str]
@@ -42,7 +46,7 @@ class ListDocumentsResponse(BaseModel):
 class SearchRequest(BaseModel):
     query_vector: Vector
     top_k: int = Field(default=10, ge=1)
-    filters: Metadata | None = None
+    filters: Optional[Metadata] = None
     include_vectors: bool = False
 
 class SearchResultResponse(BaseModel):
@@ -50,7 +54,7 @@ class SearchResultResponse(BaseModel):
     score: float
     text: str
     metadata: Metadata
-    vector: Vector | None = None
+    vector: Optional[Vector] = None
 
 class SearchResponse(BaseModel):
     results: list[SearchResultResponse]

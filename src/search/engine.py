@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Optional
 
 from src.indexes.faiss_hnsw import FaissHNSWIndex
 from src.storage.metadata import MetadataStore
@@ -11,7 +12,7 @@ from src.search.filters import FilterSpec, apply as apply_filters
 _OVERSAMPLE_FACTOR = 3
 
 
-# TODO: reassess filter logic
+# TODO: reassess filtering logic with oversampling
 class SearchEngine:
     """
     Executes vector similarity searches with optional metadata search or filtering.
@@ -31,7 +32,7 @@ class SearchEngine:
         self,
         query_vector: Vector,
         top_k: int,
-        filters: FilterSpec | None = None,
+        filters: Optional[FilterSpec] = None,
         include_vectors: bool = False,
     ) -> list[SearchResult]:
         """

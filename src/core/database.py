@@ -1,9 +1,12 @@
 import json
 import re
 from pathlib import Path
+from typing import Optional
 
 from src.storage.collection import CollectionStorage
-from src.storage.discovery import discover_collection_dim, discover_collection_info, discover_collections_info
+from src.storage.discovery import (
+    discover_collection_dim, discover_collection_info, discover_collections_info
+)
 from src.core.collection import Collection
 from src.core.models import CollectionInfo
 from src.core.exceptions import (
@@ -44,13 +47,17 @@ class Database:
 				"Collection name must contain only letters, numbers, underscores, or hyphens"
 			)
 
-	def create_collection(self, name: str, dim: int) -> CollectionStorage:
+	def create_collection(
+    	self, name: str, dim: int, emb_model: Optional[str] = None
+    ) -> CollectionStorage:
 		"""
 		Create a collection and return its storage handle.
 
 		Args:
 			name: Collection name.
 			dim: Vector dimensionality for this collection.
+			emb_model: Optional embedding model ID stored as metadata. Clients can read this field 
+   				to auto-configure the correct embedder.
 
 		Returns:
 			CollectionStorage bound to the created collection.
@@ -75,10 +82,10 @@ class Database:
 			)
 
 		collection_path.mkdir(parents=True, exist_ok=False)
-		manifest_path.write_text(
-			json.dumps({"name": name, "dim": dim}, indent=2),
-			encoding="utf-8",
-		)
+		manifest: dict = {"name": name, "dim": dim}
+		if emb_model is not None:
+			manifest["emb_model"] = emb_model
+		manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 		return CollectionStorage(str(collection_path), dim)
 

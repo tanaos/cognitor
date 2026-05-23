@@ -57,16 +57,38 @@ def discover_collections_info(root_path: str) -> list[CollectionInfo]:
         if not child.is_dir():
             continue
 
-        dim = _read_collection_dim_from_manifest(child / "collection.json")
-        if dim is not None:
+        manifest = _read_collection_manifest(child / "collection.json")
+        if manifest is not None:
             results.append(
                 CollectionInfo(
-                    name=child.name, dim=dim, doc_count=_count_collection_documents(child)
+                    name=child.name,
+                    dim=manifest["dim"],
+                    doc_count=_count_collection_documents(child),
+                    emb_model=manifest.get("emb_model"),
                 )
             )
 
     results.sort(key=lambda x: x.name)
     return results
+
+
+def discover_collection_model(root_path: str, name: str) -> Optional[str]:
+    """
+    Return the embedding model ID configured for a collection, or None.
+
+    Args:
+        root_path: Root directory where collections are stored.
+        name: Collection name.
+
+    Returns:
+        Model ID string if set, otherwise None.
+    """
+    manifest_path = Path(root_path) / name / "collection.json"
+    data = _read_collection_manifest(manifest_path)
+    if data is None:
+        return None
+    emb_model = data.get("emb_model")
+    return emb_model if isinstance(emb_model, str) else None
 
 
 def discover_collection_info(root_path: str, name: str) -> Optional[CollectionInfo]:
@@ -81,11 +103,14 @@ def discover_collection_info(root_path: str, name: str) -> Optional[CollectionIn
         CollectionInfo object if the collection is valid, otherwise None.
     """
     collection_path = Path(root_path) / name
-    dim = _read_collection_dim_from_manifest(collection_path / "collection.json")
-    if dim is None:
+    manifest = _read_collection_manifest(collection_path / "collection.json")
+    if manifest is None:
         return None
     return CollectionInfo(
-        name=name, dim=dim, doc_count=_count_collection_documents(collection_path)
+        name=name,
+        dim=manifest["dim"],
+        doc_count=_count_collection_documents(collection_path),
+        emb_model=manifest.get("emb_model"),
     )
 
 
@@ -104,15 +129,16 @@ def discover_collection_dim(root_path: str, name: str) -> Optional[int]:
     return _read_collection_dim_from_manifest(manifest_path)
 
 
-def _read_collection_dim_from_manifest(manifest_path: Path) -> Optional[int]:
+def _read_collection_manifest(manifest_path: Path) -> Optional[dict]:
     """
-    Read the collection manifest and extract the dim value if valid.
-    
+    Parse a collection manifest file and return its contents as a dict,
+    or None if the file is missing, unreadable, or lacks a valid ``dim``.
+
     Args:
         manifest_path: Path to the collection's manifest file.
 
     Returns:
-        The collection's vector dimensionality (dim) if valid, otherwise None.
+        Parsed manifest dict when valid, otherwise None.
     """
     if not manifest_path.exists():
         return None
@@ -123,10 +149,24 @@ def _read_collection_dim_from_manifest(manifest_path: Path) -> Optional[int]:
         return None
 
     dim = data.get("dim")
-    if isinstance(dim, int) and dim > 0:
-        return dim
+    if not (isinstance(dim, int) and dim > 0):
+        return None
 
-    return None
+    return data
+
+
+def _read_collection_dim_from_manifest(manifest_path: Path) -> Optional[int]:
+    """
+    Read the collection manifest and extract the dim value if valid.
+
+    Args:
+        manifest_path: Path to the collection's manifest file.
+
+    Returns:
+        The collection's vector dimensionality (dim) if valid, otherwise None.
+    """
+    data = _read_collection_manifest(manifest_path)
+    return data["dim"] if data is not None else None
 
 
 def _count_collection_documents(collection_path: Path) -> int:

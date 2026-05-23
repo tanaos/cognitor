@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 from pathlib import Path
 import numpy as np
@@ -118,7 +118,7 @@ class CollectionStorage:
 
     def get_metadata_and_text(
         self, ids: List[str]
-    ) -> List[tuple[Dict[str, Any], str] | None]:
+    ) -> List[Optional[tuple[Dict[str, Any], str]]]:
         """
         Retrieve metadata and text for a list of UUIDs.
         

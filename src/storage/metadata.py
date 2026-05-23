@@ -99,7 +99,7 @@ class MetadataStore:
         finally:
             session.close()
 
-    def get_vector_positions(self, ids: list[str]) -> list[int | None]:
+    def get_vector_positions(self, ids: list[str]) -> list[Optional[int]]:
         """
         Return the vector file position for each document UUID.
 
@@ -198,7 +198,7 @@ class MetadataStore:
         finally:
             session.close()
 
-    def get_by_vector_positions(self, positions: list[int]) -> list[Document | None]:
+    def get_by_vector_positions(self, positions: list[int]) -> list[Optional[Document]]:
         """
         Retrieve documents by their vector file positions.
 
