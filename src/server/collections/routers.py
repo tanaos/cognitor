@@ -5,12 +5,14 @@ from fastapi import APIRouter, status, Query, Depends
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
     ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
-from src.server.dependencies import get_database, get_scheduler
+from src.server.dependencies import get_database, get_scheduler, get_embedder_registry
 from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
+from src.embeddings.registry import EmbedderRegistry
 
 DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
+EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)]
 
 
 collections_router = APIRouter()
@@ -171,13 +173,29 @@ async def add_documents(
     name: str,
     request: AddDocumentRequest,
     database: DatabaseDep,
+    embedder_registry: EmbedderRegistryDep,
 ) -> AddDocumentResponse:
     """
     Add a document to the specified collection.
+
+    ``vectors`` may be omitted when the collection was created with an
+    ``emb_model`` and the corresponding embedder has been registered via
+    :func:`src.embeddings.register`.  In that case the server will embed
+    ``texts`` automatically before storing them.
     """
+    vectors = request.vectors
+    if vectors is None:
+        coll_info = database.get_collection_info(name)
+        if not coll_info.emb_model:
+            raise ValueError(
+                "vectors are required when no emb_model is configured for the collection"
+            )
+        embedder = embedder_registry.get(coll_info.emb_model)
+        vectors = embedder.embed(request.texts).tolist()
+
     collection = database.get_collection_service(name)
     document_ids = collection.add_documents(
-        vectors=request.vectors,
+        vectors=vectors,
         metadatas=request.metadatas,
         texts=request.texts,
     )
@@ -352,14 +370,29 @@ async def search_collection(
     name: str,
     request: SearchRequest,
     database: DatabaseDep,
+    embedder_registry: EmbedderRegistryDep,
 ) -> SearchResponse:
     """
     Search for the most similar documents to a query vector.
+
+    Either ``query_vector`` or ``query_text`` must be provided.  When only
+    ``query_text`` is given the server embeds it automatically using the
+    embedder registered for the collection's ``emb_model``.
     Optionally filter results by metadata key-value pairs.
     """
+    query_vector = request.query_vector
+    if query_vector is None:
+        coll_info = database.get_collection_info(name)
+        if not coll_info.emb_model:
+            raise ValueError(
+                "query_text requires emb_model to be configured for the collection"
+            )
+        embedder = embedder_registry.get(coll_info.emb_model)
+        query_vector = embedder.embed([request.query_text]).tolist()[0]  # type: ignore[arg-type]
+
     collection = database.get_collection_service(name)
     results = collection.search(
-        query_vector=request.query_vector,
+        query_vector=query_vector,
         top_k=request.top_k,
         filters=request.filters,
         include_vectors=request.include_vectors,

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.types import Vector, Metadata, DocumentId
 
@@ -21,7 +21,7 @@ class CreateCollectionRequest(BaseModel):
     emb_model: Optional[str] = None
 
 class AddDocumentRequest(BaseModel):
-    vectors: list[Vector]
+    vectors: Optional[list[Vector]] = None
     texts: list[str]
     metadatas: list[Metadata]
 
@@ -44,10 +44,17 @@ class ListDocumentsResponse(BaseModel):
     limit: int
 
 class SearchRequest(BaseModel):
-    query_vector: Vector
+    query_vector: Optional[Vector] = None
+    query_text: Optional[str] = None
     top_k: int = Field(default=10, ge=1)
     filters: Optional[Metadata] = None
     include_vectors: bool = False
+
+    @model_validator(mode="after")
+    def _require_query(self) -> "SearchRequest":
+        if self.query_vector is None and self.query_text is None:
+            raise ValueError("either query_vector or query_text must be provided")
+        return self
 
 class SearchResultResponse(BaseModel):
     id: DocumentId

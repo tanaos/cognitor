@@ -28,6 +28,8 @@ from src.core.exceptions import (
     InvalidDocumentInputError,
     DimensionMismatchError,
 )
+from src.embeddings.registry import EmbedderRegistry
+from src.embeddings.exceptions import EmbedderNotFoundError, EmbeddingError
 
 
 setup_logging()
@@ -38,6 +40,13 @@ _logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     _logger.info("cognitor is starting up")
     config = get_config()
+
+    from src.embeddings.providers.sentence_transformers import register_sentence_transformers
+    embedder_registry = EmbedderRegistry()
+    for model_name in config.emb_models:
+        register_sentence_transformers(embedder_registry, model_name)
+        _logger.info("registered sentence-transformers embedder: %s", model_name)
+
     database = Database()
     app.state.app_state = AppState(
         config=config,
@@ -46,6 +55,7 @@ async def lifespan(app: FastAPI):
             threshold=config.compaction_threshold,
             database=database,
         ),
+        embedder_registry=embedder_registry,
     )
     init_db()
     yield
@@ -132,6 +142,20 @@ async def conflict_handler(request: Request, exc: Exception):
 async def domain_bad_request_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
+        content=ErrorResponse(message=str(exc)).model_dump()
+    )
+
+@app.exception_handler(EmbedderNotFoundError)
+async def embedder_not_found_handler(request: Request, exc: EmbedderNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=ErrorResponse(message=str(exc)).model_dump()
+    )
+
+@app.exception_handler(EmbeddingError)
+async def embedding_error_handler(request: Request, exc: EmbeddingError):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ErrorResponse(message=str(exc)).model_dump()
     )
 
