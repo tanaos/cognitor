@@ -45,7 +45,8 @@ async def lifespan(app: FastAPI):
     embedder_registry = EmbedderRegistry()
     for model_name in config.emb_models:
         register_sentence_transformers(embedder_registry, model_name)
-        _logger.info("Registered sentence-transformers embedder: %s", model_name)
+        embedder_registry.get(model_name)  # load weights now, not on first request
+        _logger.info("Loaded embedder: %s", model_name)
 
     database = Database()
     app.state.app_state = AppState(

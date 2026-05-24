@@ -113,15 +113,24 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
     }
 )
 async def create_collection(
-    collection: CreateCollectionRequest, database: DatabaseDep, config: ConfigDep
+    collection: CreateCollectionRequest, database: DatabaseDep, config: ConfigDep,
+    embedder_registry: EmbedderRegistryDep,
 ) -> Collection:
     """
     Create a new collection with the specified name and dimensionality.
+
+    ``dim`` may be omitted when ``emb_model`` is set (or a default is configured):
+    the server resolves it automatically from the registered embedder.
     """
     emb_model = collection.emb_model or config.default_emb_model
-    database.create_collection(collection.name, collection.dim, emb_model)
+    dim = collection.dim
+    if dim is None:
+        if not emb_model:
+            raise ValueError("dim is required when no emb_model is configured")
+        dim = embedder_registry.get(emb_model).dim
+    database.create_collection(collection.name, dim, emb_model)
     return Collection(
-        name=collection.name, dim=collection.dim, doc_count=0,
+        name=collection.name, dim=dim, doc_count=0,
         emb_model=emb_model
     )
 

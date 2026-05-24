@@ -17,7 +17,7 @@ class ListCollectionsResponse(BaseModel):
 
 class CreateCollectionRequest(BaseModel):
     name: str
-    dim: int
+    dim: Optional[int] = None
     emb_model: Optional[str] = None
 
 class AddDocumentRequest(BaseModel):
