@@ -38,14 +38,19 @@ _logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _logger.info("cognitor is starting up")
+    _logger.info("Cognitor is starting up")
     config = get_config()
 
     from src.embeddings.providers.sentence_transformers import register_sentence_transformers
     embedder_registry = EmbedderRegistry()
     for model_name in config.emb_models:
         register_sentence_transformers(embedder_registry, model_name)
-        _logger.info("registered sentence-transformers embedder: %s", model_name)
+        _logger.info("Registered sentence-transformers embedder: %s", model_name)
+
+    default_model = config.default_emb_model
+    if default_model and embedder_registry.list_registered():
+        _logger.info("Loading default embedder: %s", default_model)
+        embedder_registry.get(default_model)
 
     database = Database()
     app.state.app_state = AppState(
@@ -59,7 +64,7 @@ async def lifespan(app: FastAPI):
     )
     init_db()
     yield
-    _logger.info("cognitor is shutting down")
+    _logger.info("Cognitor is shutting down")
     
 app = FastAPI(
     title="Cognitor REST API",

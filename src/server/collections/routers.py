@@ -5,14 +5,16 @@ from fastapi import APIRouter, status, Query, Depends
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
     ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
-from src.server.dependencies import get_database, get_scheduler, get_embedder_registry
+from src.server.dependencies import get_database, get_scheduler, get_embedder_registry, get_config
 from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
+from src.config.settings import Config
 
 DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)]
+ConfigDep = Annotated[Config, Depends(get_config)]
 
 
 collections_router = APIRouter()
@@ -111,15 +113,16 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
     }
 )
 async def create_collection(
-    collection: CreateCollectionRequest, database: DatabaseDep
+    collection: CreateCollectionRequest, database: DatabaseDep, config: ConfigDep
 ) -> Collection:
     """
     Create a new collection with the specified name and dimensionality.
     """
-    database.create_collection(collection.name, collection.dim, collection.emb_model)
+    emb_model = collection.emb_model or config.default_emb_model
+    database.create_collection(collection.name, collection.dim, emb_model)
     return Collection(
-        name=collection.name, dim=collection.dim, doc_count=0, 
-        emb_model=collection.emb_model
+        name=collection.name, dim=collection.dim, doc_count=0,
+        emb_model=emb_model
     )
 
 

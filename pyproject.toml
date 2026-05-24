@@ -9,6 +9,7 @@ dependencies = [
     "fastapi[standard]>=0.136.1",
     "numpy>=2.4.4",
     "pydantic-settings>=2.14.1",
+    "sentence-transformers>=5.5.1",
     "sqlalchemy>=2.0.0",
 ]
 
