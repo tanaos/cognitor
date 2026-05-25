@@ -6,7 +6,8 @@ from typing import Optional
 
 from src.storage.models import Document
 from src.storage.orm import Base
-from src.config.defaults import SQLLITE_DB_PATH
+
+_METADATA_DB_FILE = "metadata.sqlite"
 
 
 class MetadataStore:
@@ -15,7 +16,7 @@ class MetadataStore:
     """
 
     def __init__(self, path: str):
-        db_path = Path(path) / SQLLITE_DB_PATH
+        db_path = Path(path) / _METADATA_DB_FILE
         db_url = f"sqlite:///{db_path}"
         self.engine = create_engine(db_url)
         self.SessionLocal = sessionmaker(bind=self.engine)

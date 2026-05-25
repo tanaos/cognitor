@@ -20,7 +20,6 @@ from pathlib import Path
 # Allow imports from the project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config.defaults import SQLLITE_DB_PATH
 from src.storage.collection import CollectionStorage
 from src.storage.compaction import compact
 from src.storage.discovery import discover_collections, discover_collection_dim

@@ -3,7 +3,6 @@ import sqlite3
 from typing import Optional
 from pathlib import Path
 
-from src.config.defaults import SQLLITE_DB_PATH
 from src.core.models import CollectionInfo
 
 
@@ -179,7 +178,7 @@ def _count_collection_documents(collection_path: Path) -> int:
     Returns:
         Number of rows in the collection metadata store, or 0 if unavailable.
     """
-    db_path = collection_path / SQLLITE_DB_PATH
+    db_path = collection_path / "metadata.sqlite"
     if not db_path.exists():
         return 0
 

@@ -15,7 +15,6 @@ from .middleware.auth import AuthMiddleware
 
 from src.utils.logging import setup_logging
 from src.config.settings import get_config
-from src.storage.orm import init_db
 from src.core.database import Database
 from src.core.state import AppState
 from src.execution.scheduler import CompactionScheduler
@@ -57,7 +56,6 @@ async def lifespan(app: FastAPI):
         ),
         embedder_registry=embedder_registry,
     )
-    init_db()
     yield
     _logger.info("Cognitor is shutting down")
     
