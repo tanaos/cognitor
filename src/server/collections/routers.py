@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from anyio.to_thread import run_sync
 from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
@@ -261,13 +262,17 @@ async def bulk_add_documents(
         embedder = embedder_registry.get(coll_info.emb_model)
 
     collection = database.get_collection_service(name)
-    document_ids = batch_add_documents(
-        collection=collection,
-        texts=request.texts,
-        metadatas=request.metadatas,
-        vectors=request.vectors,
-        embedder=embedder,
-        batch_size=batch_size,
+    # Run the potentially blocking batch addition in a thread to avoid blocking 
+    # the event loop.
+    document_ids = await run_sync(
+        lambda: batch_add_documents(
+            collection=collection,
+            texts=request.texts,
+            metadatas=request.metadatas,
+            vectors=request.vectors,
+            embedder=embedder,
+            batch_size=batch_size,
+        )
     )
     return AddDocumentResponse(ids=document_ids)
 
