@@ -7,6 +7,7 @@ from .models import ListCollectionsResponse, Collection, CreateCollectionRequest
     ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
 from src.server.dependencies import get_database, get_scheduler, get_embedder_registry, get_config
 from src.core.database import Database
+from src.execution.batching import batch_add_documents
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
@@ -210,6 +211,63 @@ async def add_documents(
         vectors=vectors,
         metadatas=request.metadatas,
         texts=request.texts,
+    )
+    return AddDocumentResponse(ids=document_ids)
+
+
+@collections_router.post(
+    path="/{name}/documents/bulk",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {
+            "description": "Documents added successfully",
+            "content": {
+                "application/json": {
+                    "example": {"ids": ["uuid1", "uuid2", "uuid3"]}
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Collection not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Collection 'nonexistent_collection' does not exist"}
+                }
+            }
+        },
+    }
+)
+async def bulk_add_documents(
+    name: str,
+    request: AddDocumentRequest,
+    database: DatabaseDep,
+    embedder_registry: EmbedderRegistryDep,
+    batch_size: int = Query(default=512, ge=1, le=4096),
+) -> AddDocumentResponse:
+    """
+    Add a large number of documents to a collection in internal batches.
+
+    Identical request shape to ``POST /{name}/documents`` but processes the
+    payload in fixed-size chunks of *batch_size* to keep memory pressure
+    bounded when embedding or storing thousands of vectors at once.
+    """
+    embedder = None
+    if request.vectors is None:
+        coll_info = database.get_collection_info(name)
+        if not coll_info.emb_model:
+            raise ValueError(
+                "vectors are required when no emb_model is configured for the collection"
+            )
+        embedder = embedder_registry.get(coll_info.emb_model)
+
+    collection = database.get_collection_service(name)
+    document_ids = batch_add_documents(
+        collection=collection,
+        texts=request.texts,
+        metadatas=request.metadatas,
+        vectors=request.vectors,
+        embedder=embedder,
+        batch_size=batch_size,
     )
     return AddDocumentResponse(ids=document_ids)
 

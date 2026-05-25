@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.core.types import Vector, Metadata, DocumentId
 
@@ -24,6 +24,17 @@ class AddDocumentRequest(BaseModel):
     vectors: Optional[list[Vector]] = None
     texts: list[str]
     metadatas: list[Metadata]
+
+    @field_validator("texts")
+    @classmethod
+    def _check_texts_limit(cls, v: list[str]) -> list[str]:
+        add_limit = 200
+        if len(v) > add_limit:
+            raise ValueError(
+                f"too many documents: this endpoint accepts at most {add_limit} documents per request. "
+                f"For larger payloads use POST /collections/{{name}}/documents/bulk."                 
+            )
+        return v
 
 class UpdateDocumentRequest(BaseModel):
     metadata: Metadata
