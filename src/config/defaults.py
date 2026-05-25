@@ -1,2 +1,2 @@
-SQLLITE_DB_PATH = "./metadata.sqlite"
+SQLLITE_DB_PATH = "./storage/metadata.sqlite"
 INDEX_FILE = "index.faiss"

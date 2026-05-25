@@ -117,7 +117,7 @@ async def create_collection(
     embedder_registry: EmbedderRegistryDep,
 ) -> Collection:
     """
-    Create a new collection with the specified name and dimensionality.
+    Create a new collection with the specified name and dimension.
 
     ``dim`` may be omitted when ``emb_model`` is set (or a default is configured):
     the server resolves it automatically from the registered embedder.
