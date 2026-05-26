@@ -84,6 +84,8 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
         emb_model=coll_info.emb_model
     )
 
+# TODO: default embedder should be downloaded on startup, else this endpoint
+# will time out on first use when it tries to download the embedding model.
 @collections_router.post(
     path="",
     status_code=status.HTTP_201_CREATED,

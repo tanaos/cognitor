@@ -10,10 +10,11 @@ class Config(BaseSettings):
     # Percentage of deleted documents in a collection that triggers compaction
     compaction_threshold: float = 0.20
     
-    emb_models: list[str] = ["all-MiniLM-L6-v2"]
+    emb_models: list[str] = ["BAAI/bge-m3"]
+    fallback_emb_model: str = "BAAI/bge-m3"
     @property
     def default_emb_model(self) -> str:
-        return self.emb_models[0] if self.emb_models else "all-MiniLM-L6-v2"
+        return self.emb_models[0] if self.emb_models else self.fallback_emb_model
 
     model_config = SettingsConfigDict(
         env_file=".env",
