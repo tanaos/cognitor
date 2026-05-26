@@ -188,6 +188,7 @@ async def add_documents(
     request: AddDocumentRequest,
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
+    scheduler: SchedulerDep,
 ) -> AddDocumentResponse:
     """
     Add a document to the specified collection.
@@ -197,6 +198,7 @@ async def add_documents(
     :func:`src.embeddings.register`.  In that case the server will embed
     ``texts`` automatically before storing them.
     """
+    # Embed outside the lock — it's CPU-bound and does not touch shared storage.
     vectors = request.vectors
     if vectors is None:
         coll_info = database.get_collection_info(name)
@@ -208,11 +210,12 @@ async def add_documents(
         vectors = embedder.embed(request.texts).tolist()
 
     collection = database.get_collection_service(name)
-    document_ids = collection.add_documents(
-        vectors=vectors,
-        metadatas=request.metadatas,
-        texts=request.texts,
-    )
+    async with scheduler.get_collection_lock(name):
+        document_ids = collection.add_documents(
+            vectors=vectors,
+            metadatas=request.metadatas,
+            texts=request.texts,
+        )
     return AddDocumentResponse(ids=document_ids)
 
 
@@ -243,6 +246,7 @@ async def bulk_add_documents(
     request: AddDocumentRequest,
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
+    scheduler: SchedulerDep,
     batch_size: int = Query(default=512, ge=1, le=4096),
 ) -> AddDocumentResponse:
     """
@@ -262,18 +266,17 @@ async def bulk_add_documents(
         embedder = embedder_registry.get(coll_info.emb_model)
 
     collection = database.get_collection_service(name)
-    # Run the potentially blocking batch addition in a thread to avoid blocking 
-    # the event loop.
-    document_ids = await run_sync(
-        lambda: batch_add_documents(
-            collection=collection,
-            texts=request.texts,
-            metadatas=request.metadatas,
-            vectors=request.vectors,
-            embedder=embedder,
-            batch_size=batch_size,
+    async with scheduler.get_collection_lock(name):
+        document_ids = await run_sync(
+            lambda: batch_add_documents(
+                collection=collection,
+                texts=request.texts,
+                metadatas=request.metadatas,
+                vectors=request.vectors,
+                embedder=embedder,
+                batch_size=batch_size,
+            )
         )
-    )
     return AddDocumentResponse(ids=document_ids)
 
 
@@ -296,6 +299,7 @@ async def bulk_add_documents(
 async def list_documents(
     name: str,
     database: DatabaseDep,
+    scheduler: SchedulerDep,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=1000),
 ) -> ListDocumentsResponse:
@@ -305,7 +309,8 @@ async def list_documents(
     coll_info = database.get_collection_info(name)
     collection = database.get_collection_service(name)
 
-    docs = collection.list_documents(offset=offset, limit=limit)
+    async with scheduler.get_collection_lock(name):
+        docs = collection.list_documents(offset=offset, limit=limit)
     documents = [
         DocumentResponse(id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata)
         for doc in docs
@@ -338,12 +343,14 @@ async def get_document(
     name: str,
     id: str,
     database: DatabaseDep,
+    scheduler: SchedulerDep,
 ) -> DocumentResponse:
     """
     Retrieve a document by its ID from the specified collection.
     """
     collection = database.get_collection_service(name)
-    doc = collection.get_document(id)
+    async with scheduler.get_collection_lock(name):
+        doc = collection.get_document(id)
     return DocumentResponse(
         id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata
     )
@@ -376,10 +383,12 @@ async def delete_document(
     Delete a document by its ID from the specified collection.
     """
     collection = database.get_collection_service(name)
-    collection.delete_document(id)
+    async with scheduler.get_collection_lock(name):
+        collection.delete_document(id)
 
-    # After a deletion, check if the collection has reached the compaction threshold and 
-    # schedule compaction if needed.
+    # check_and_schedule is called outside the lock: it inspects lock.locked() to
+    # decide whether to enqueue a compaction task. Calling it while holding the
+    # lock would make it always see the lock as taken and never schedule.
     await scheduler.check_and_schedule(name)
 
 
@@ -405,13 +414,15 @@ async def update_document_metadata(
     id: str,
     request: UpdateDocumentRequest,
     database: DatabaseDep,
+    scheduler: SchedulerDep,
 ) -> DocumentResponse:
     """
     Replace the metadata of a document by its ID.
     """
     collection = database.get_collection_service(name)
-    collection.update_document(id, request.metadata)
-    doc = collection.get_document(id)
+    async with scheduler.get_collection_lock(name):
+        collection.update_document(id, request.metadata)
+        doc = collection.get_document(id)
     return DocumentResponse(
         id=id, vector=doc.vector, text=doc.text, metadata=doc.metadata
     )
@@ -446,6 +457,7 @@ async def search_collection(
     request: SearchRequest,
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
+    scheduler: SchedulerDep,
 ) -> SearchResponse:
     """
     Search for the most similar documents to a query vector.
@@ -455,6 +467,7 @@ async def search_collection(
     embedder registered for the collection's ``emb_model``.
     Optionally filter results by metadata key-value pairs.
     """
+    # Embed outside the lock — it's CPU-bound and does not touch shared storage.
     query_vector = request.query_vector
     if query_vector is None:
         coll_info = database.get_collection_info(name)
@@ -466,12 +479,13 @@ async def search_collection(
         query_vector = embedder.embed([request.query_text]).tolist()[0]  # type: ignore[arg-type]
 
     collection = database.get_collection_service(name)
-    results = collection.search(
-        query_vector=query_vector,
-        top_k=request.top_k,
-        filters=request.filters,
-        include_vectors=request.include_vectors,
-    )
+    async with scheduler.get_collection_lock(name):
+        results = collection.search(
+            query_vector=query_vector,
+            top_k=request.top_k,
+            filters=request.filters,
+            include_vectors=request.include_vectors,
+        )
     return SearchResponse(
         results=[
             SearchResultResponse(

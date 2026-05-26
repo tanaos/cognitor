@@ -31,11 +31,16 @@ def compact(name: str, storage: CollectionStorage) -> CompactionResult:
         A ``CompactionResult`` describing what was removed.
     """
     total = storage.vectors.load_size()
-    live_docs = storage.metadata.list_all_live()
+    all_live_docs = storage.metadata.list_all_live()
+
+    # Drop any docs whose vector_pos exceeds the current file; this happens when
+    # a previous compaction replaced the vector file but crashed before it could
+    # rewrite the metadata. Their vectors are gone and are unrecoverable.
+    live_docs = [doc for doc in all_live_docs if doc.vector_pos < total]
     live_count = len(live_docs)
     deleted_count = total - live_count
 
-    if deleted_count == 0:
+    if deleted_count == 0 and len(live_docs) == len(all_live_docs):
         return CompactionResult(
             collection_name=name,
             vectors_before=total,

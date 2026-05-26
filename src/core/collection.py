@@ -95,11 +95,14 @@ class Collection:
         if self._storage.vectors.vectors is None:
             return []
 
+        size = self._storage.vectors.vectors.shape[0]
         return [
             Document(
-                id=doc.id, vector=self._storage.vectors.vectors[doc.vector_pos].tolist(), 
+                id=doc.id, vector=self._storage.vectors.vectors[doc.vector_pos].tolist(),
                 text=doc.text, metadata=doc.metadata
-            ) for doc in live_docs
+            )
+            for doc in live_docs
+            if doc.vector_pos < size
         ]
 
     def delete_document(self, doc_id: DocumentId) -> None:
