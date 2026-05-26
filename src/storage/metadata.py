@@ -199,30 +199,35 @@ class MetadataStore:
         finally:
             session.close()
 
-    def get_by_vector_positions(self, positions: list[int]) -> list[Optional[Document]]:
+    def get_by_vector_positions(self, positions: list[int]) -> list[Document]:
         """
-        Retrieve documents by their vector file positions.
+        Retrieve all documents whose vector_pos is in *positions*.
 
         Args:
             positions: List of vector_pos values to look up.
 
         Returns:
-            List of Document objects in the same order as positions, or None for
-            any position that has no live (non-deleted) document.
+            All Document objects whose vector_pos appears in *positions*,
+            ordered by the position list then by document id.  Multiple
+            documents may share the same vector_pos (e.g. after a partial
+            compaction), so the returned list may be longer than *positions*.
         """
         session = self.SessionLocal()
         try:
-            rows = session.query(Document).filter(
-                Document.vector_pos.in_(positions)
-            ).all()
-            pos_map = {
-                row.vector_pos: Document(
+            position_set = set(positions)
+            rows = (
+                session.query(Document)
+                .filter(Document.vector_pos.in_(position_set))
+                .order_by(Document.vector_pos, Document.id)
+                .all()
+            )
+            return [
+                Document(
                     id=row.id, vector_pos=row.vector_pos, text=row.text,
                     metadata=json.loads(row.metadata_json),
                 )
                 for row in rows
-            }
-            return [pos_map.get(p) for p in positions]
+            ]
         finally:
             session.close()
 

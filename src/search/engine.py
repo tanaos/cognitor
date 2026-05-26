@@ -79,8 +79,6 @@ class SearchEngine:
 
         results: list[SearchResult] = []
         for doc in docs:
-            if doc is None:
-                continue
             vector = None
             if include_vectors and self._vector_store.vectors is not None:
                 vector = self._vector_store.vectors[doc.vector_pos].tolist()
@@ -95,4 +93,5 @@ class SearchEngine:
             )
 
         results = apply_filters(results, filters)
+        results.sort(key=lambda r: r.score)  # L2 distance: lower = more similar
         return results[:top_k]

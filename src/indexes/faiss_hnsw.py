@@ -81,8 +81,17 @@ class FaissHNSWIndex(VectorIndex):
             - ids: The vector_pos IDs of the nearest neighbors.
         """
         
+        # Raise efSearch to at least top_k so HNSW explores enough candidates.
+        # The default ef_search=50 would silently miss results when top_k > 50.
+        inner: faiss.IndexHNSWFlat = faiss.downcast_index(self._index.index)
+        prev_ef = inner.hnsw.efSearch
+        if top_k > prev_ef:
+            inner.hnsw.efSearch = top_k
+
         query_f32 = query.astype(np.float32).reshape(1, -1) # FAISS expects 2D input for search
         scores, ids = self._index.search(query_f32, top_k)
+
+        inner.hnsw.efSearch = prev_ef  # restore for consistency
         return scores[0], ids[0]
 
     def rebuild(self, positions: np.ndarray, vectors: np.ndarray) -> None:

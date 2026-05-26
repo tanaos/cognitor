@@ -32,6 +32,12 @@ class CollectionStorage:
         # Recover before opening: rolls back any uncommitted vectors and removes
         # orphaned metadata rows so both stores are consistent.
         self.wal.recover(self.vectors, self.metadata)
+        # Sync size from disk so that add() computes the correct vector_start.
+        # VectorStore.__init__ leaves size=0; WAL recovery only updates it when
+        # it actually truncates (crash path). On a clean startup the field stays
+        # 0, causing every add() to truncate the file back to position 0 and
+        # overwrite all previously stored vectors.
+        self.vectors.size = self.vectors.load_size()
         self.index: FaissHNSWIndex = FaissHNSWIndex(dim)
         index_file = Path(path) / INDEX_FILE
         if index_file.exists():
