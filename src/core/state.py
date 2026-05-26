@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 
 from src.config.settings import Config
@@ -12,3 +13,4 @@ class AppState:
     database: Database
     compaction_scheduler: CompactionScheduler
     embedder_registry: EmbedderRegistry
+    models_ready: asyncio.Event

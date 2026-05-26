@@ -6,17 +6,20 @@ from fastapi import APIRouter, status, Query, Depends
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
     ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
-from src.server.dependencies import get_database, get_scheduler, get_embedder_registry, get_config
+from src.server.dependencies import get_database, get_scheduler, get_embedder_registry, get_config, get_models_ready
 from src.core.database import Database
 from src.execution.batching import batch_add_documents
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
+import asyncio
+
 
 DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)]
 ConfigDep = Annotated[Config, Depends(get_config)]
+ModelsReadyDep = Annotated[asyncio.Event, Depends(get_models_ready)]
 
 
 collections_router = APIRouter()
@@ -84,8 +87,6 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
         emb_model=coll_info.emb_model
     )
 
-# TODO: default embedder should be downloaded on startup, else this endpoint
-# will time out on first use when it tries to download the embedding model.
 @collections_router.post(
     path="",
     status_code=status.HTTP_201_CREATED,
@@ -118,7 +119,7 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
 )
 async def create_collection(
     collection: CreateCollectionRequest, database: DatabaseDep, config: ConfigDep,
-    embedder_registry: EmbedderRegistryDep,
+    embedder_registry: EmbedderRegistryDep, models_ready: ModelsReadyDep,
 ) -> Collection:
     """
     Create a new collection with the specified name and dimension.
@@ -131,6 +132,7 @@ async def create_collection(
     if dim is None:
         if not emb_model:
             raise ValueError("dim is required when no emb_model is configured")
+        await models_ready.wait()
         dim = embedder_registry.get(emb_model).dim
     database.create_collection(collection.name, dim, emb_model)
     return Collection(
@@ -191,6 +193,7 @@ async def add_documents(
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,
+    models_ready: ModelsReadyDep,
 ) -> AddDocumentResponse:
     """
     Add a document to the specified collection.
@@ -208,6 +211,7 @@ async def add_documents(
             raise ValueError(
                 "vectors are required when no emb_model is configured for the collection"
             )
+        await models_ready.wait()
         embedder = embedder_registry.get(coll_info.emb_model)
         vectors = embedder.embed(request.texts).tolist()
 
@@ -249,6 +253,7 @@ async def bulk_add_documents(
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,
+    models_ready: ModelsReadyDep,
     batch_size: int = Query(default=512, ge=1, le=4096),
 ) -> AddDocumentResponse:
     """
@@ -265,6 +270,7 @@ async def bulk_add_documents(
             raise ValueError(
                 "vectors are required when no emb_model is configured for the collection"
             )
+        await models_ready.wait()
         embedder = embedder_registry.get(coll_info.emb_model)
 
     collection = database.get_collection_service(name)
@@ -460,6 +466,7 @@ async def search_collection(
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,
+    models_ready: ModelsReadyDep,
 ) -> SearchResponse:
     """
     Search for the most similar documents to a query vector.
@@ -477,6 +484,7 @@ async def search_collection(
             raise ValueError(
                 "query_text requires emb_model to be configured for the collection"
             )
+        await models_ready.wait()
         embedder = embedder_registry.get(coll_info.emb_model)
         query_vector = embedder.embed([request.query_text]).tolist()[0]  # type: ignore[arg-type]
 

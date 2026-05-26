@@ -1,6 +1,8 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
+from anyio.to_thread import run_sync
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +37,21 @@ setup_logging()
 _logger = logging.getLogger(__name__)
 
 
+async def _warm_models(
+    registry: EmbedderRegistry,
+    model_names: list[str],
+    event: asyncio.Event,
+) -> None:
+    for model_name in model_names:
+        try:
+            await run_sync(lambda m=model_name: registry.get(m))
+            _logger.info("Warmed up embedder: %s", model_name)
+        except Exception:
+            _logger.exception("Failed to warm up embedder: %s", model_name)
+    event.set()
+    _logger.info("All embedders ready")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _logger.info("Cognitor is starting up")
@@ -46,6 +63,7 @@ async def lifespan(app: FastAPI):
         register_sentence_transformers(embedder_registry, model_name)
         _logger.info("Registered sentence-transformers embedder: %s", model_name)
 
+    models_ready = asyncio.Event()
     database = Database()
     app.state.app_state = AppState(
         config=config,
@@ -55,7 +73,9 @@ async def lifespan(app: FastAPI):
             database=database,
         ),
         embedder_registry=embedder_registry,
+        models_ready=models_ready,
     )
+    asyncio.create_task(_warm_models(embedder_registry, config.emb_models, models_ready))
     yield
     _logger.info("Cognitor is shutting down")
     

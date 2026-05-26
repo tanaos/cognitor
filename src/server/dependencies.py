@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import Request
 
 from src.config.settings import Config
@@ -20,3 +21,7 @@ def get_scheduler(request: Request) -> CompactionScheduler:
 
 def get_embedder_registry(request: Request) -> EmbedderRegistry:
     return request.app.state.app_state.embedder_registry
+
+
+def get_models_ready(request: Request) -> asyncio.Event:
+    return request.app.state.app_state.models_ready
