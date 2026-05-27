@@ -73,6 +73,9 @@ class SearchResultResponse(BaseModel):
     text: str
     metadata: Metadata
     vector: Optional[Vector] = None
+    answer_passage: Optional[str] = None
+    answer_passage_start: Optional[int] = None
+    answer_passage_end: Optional[int] = None
 
 class SearchResponse(BaseModel):
     results: list[SearchResultResponse]

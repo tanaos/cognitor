@@ -1,23 +1,35 @@
-from typing import Annotated
-
+from typing import Annotated, Optional
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
     ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
-from src.server.dependencies import get_database, get_scheduler, get_embedder_registry, get_config, get_models_ready
+from src.server.dependencies import (
+    get_database,
+    get_scheduler,
+    get_embedder_registry,
+    get_qa_extractor,
+    get_config,
+    get_models_ready,
+)
 from src.core.database import Database
 from src.execution.batching import batch_add_documents
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
+from src.search.extractive_qa import ExtractiveQA
 import asyncio
+import logging
+
+
+_logger = logging.getLogger(__name__)
 
 
 DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)]
+QaExtractorDep = Annotated[ExtractiveQA, Depends(get_qa_extractor)]
 ConfigDep = Annotated[Config, Depends(get_config)]
 ModelsReadyDep = Annotated[asyncio.Event, Depends(get_models_ready)]
 
@@ -465,6 +477,7 @@ async def search_collection(
     request: SearchRequest,
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
+    qa_extractor: QaExtractorDep,
     scheduler: SchedulerDep,
     models_ready: ModelsReadyDep,
 ) -> SearchResponse:
@@ -496,13 +509,36 @@ async def search_collection(
             filters=request.filters,
             include_vectors=request.include_vectors,
         )
+
+    answer_passages: list[Optional[str]] = [None] * len(results)
+    answer_starts: list[Optional[int]] = [None] * len(results)
+    answer_ends: list[Optional[int]] = [None] * len(results)
+    if request.query_text is not None and results:
+        try:
+            extracted_answers = await run_sync(
+                qa_extractor.extract_many,
+                request.query_text,
+                [result.text for result in results],
+            )
+            for idx, extracted in enumerate(extracted_answers):
+                if extracted is None:
+                    continue
+                answer_passages[idx] = extracted.passage
+                answer_starts[idx] = extracted.start
+                answer_ends[idx] = extracted.end
+        except Exception:
+            _logger.exception("Extractive QA inference failed for collection: %s", name)
+
     return SearchResponse(
         results=[
             SearchResultResponse(
                 id=r.id, score=r.score, text=r.text,
                 metadata=r.metadata, vector=r.vector,
+                answer_passage=answer_passages[idx],
+                answer_passage_start=answer_starts[idx],
+                answer_passage_end=answer_ends[idx],
             )
-            for r in results
+            for idx, r in enumerate(results)
         ],
         total=len(results),
     )
