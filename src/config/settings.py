@@ -12,6 +12,9 @@ class Config(BaseSettings):
     
     emb_models: list[str] = ["BAAI/bge-m3"]
     fallback_emb_model: str = "BAAI/bge-m3"
+    qa_model: str = "deepset/xlm-roberta-base-squad2"
+    qa_min_score: float = Field(default=0.05, ge=0.0, le=1.0)
+
     @property
     def default_emb_model(self) -> str:
         return self.emb_models[0] if self.emb_models else self.fallback_emb_model

@@ -31,6 +31,7 @@ from src.core.exceptions import (
 )
 from src.embeddings.registry import EmbedderRegistry
 from src.embeddings.exceptions import EmbedderNotFoundError, EmbeddingError
+from src.search.extractive_qa import ExtractiveQA
 
 
 setup_logging()
@@ -39,6 +40,7 @@ _logger = logging.getLogger(__name__)
 
 async def _warm_models(
     registry: EmbedderRegistry,
+    qa_extractor: ExtractiveQA,
     model_names: list[str],
     event: asyncio.Event,
 ) -> None:
@@ -48,8 +50,15 @@ async def _warm_models(
             _logger.info("Warmed up embedder: %s", model_name)
         except Exception:
             _logger.exception("Failed to warm up embedder: %s", model_name)
+
+    try:
+        await run_sync(qa_extractor.warmup)
+        _logger.info("Warmed up extractive QA model: %s", qa_extractor.model_name)
+    except Exception:
+        _logger.exception("Failed to warm up extractive QA model: %s", qa_extractor.model_name)
+
     event.set()
-    _logger.info("All embedders ready")
+    _logger.info("All models ready")
 
 
 @asynccontextmanager
@@ -63,6 +72,11 @@ async def lifespan(app: FastAPI):
         register_sentence_transformers(embedder_registry, model_name)
         _logger.info("Registered sentence-transformers embedder: %s", model_name)
 
+    qa_extractor = ExtractiveQA(
+        model_name=config.qa_model,
+        min_score=config.qa_min_score,
+    )
+
     models_ready = asyncio.Event()
     database = Database()
     app.state.app_state = AppState(
@@ -73,9 +87,17 @@ async def lifespan(app: FastAPI):
             database=database,
         ),
         embedder_registry=embedder_registry,
+        qa_extractor=qa_extractor,
         models_ready=models_ready,
     )
-    asyncio.create_task(_warm_models(embedder_registry, config.emb_models, models_ready))
+    asyncio.create_task(
+        _warm_models(
+            embedder_registry,
+            qa_extractor,
+            config.emb_models,
+            models_ready,
+        )
+    )
     yield
     _logger.info("Cognitor is shutting down")
     
