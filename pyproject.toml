@@ -11,6 +11,9 @@ dependencies = [
     "pydantic-settings>=2.14.1",
     "sentence-transformers>=5.5.1",
     "sqlalchemy>=2.0.0",
+    "transformers>=5.9.0",
+    "sentencepiece>=0.2.0",
+    "protobuf>=5.0.0",
 ]
 
 [tool.pyright]
