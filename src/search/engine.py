@@ -13,6 +13,9 @@ _OVERSAMPLE_FACTOR = 3
 
 
 # TODO: reassess filtering logic with oversampling
+# TODO: users should be able to decide which search steps shoud be performed and which shouldn't;
+# in particular, the q&a step only add meaningful information if the user query is a question,
+# but it would be a waste of resources for keyword search queries.
 class SearchEngine:
     """
     Executes vector similarity searches with optional metadata search or filtering.

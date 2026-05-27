@@ -53,8 +53,8 @@ async def ping_server() -> str:
 )
 async def health_ready(request: Request) -> JSONResponse:
     """
-    Return 200 once all configured embedding models have been warmed up,
-    503 while they are still loading. Use this as a readiness probe.
+    Return 200 once the application is fully ready to serve requests, or
+    503 while it is still loading. Use this as a readiness probe.
     """
     models_ready: asyncio.Event = request.app.state.app_state.models_ready
     if models_ready.is_set():
