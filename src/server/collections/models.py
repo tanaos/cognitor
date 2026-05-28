@@ -67,15 +67,18 @@ class SearchRequest(BaseModel):
             raise ValueError("either query_vector or query_text must be provided")
         return self
 
+class AnswerPassage(BaseModel):
+    passage: str
+    start: int
+    end: int
+
 class SearchResultResponse(BaseModel):
     id: DocumentId
     score: float
     text: str
     metadata: Metadata
     vector: Optional[Vector] = None
-    answer_passage: Optional[str] = None
-    answer_passage_start: Optional[int] = None
-    answer_passage_end: Optional[int] = None
+    answer: Optional[AnswerPassage] = None
 
 class SearchResponse(BaseModel):
     results: list[SearchResultResponse]

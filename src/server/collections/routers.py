@@ -4,7 +4,7 @@ from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
-    ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse
+    ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse, AnswerPassage
 from src.server.dependencies import (
     get_database,
     get_scheduler,
@@ -510,9 +510,7 @@ async def search_collection(
             include_vectors=request.include_vectors,
         )
 
-    answer_passages: list[Optional[str]] = [None] * len(results)
-    answer_starts: list[Optional[int]] = [None] * len(results)
-    answer_ends: list[Optional[int]] = [None] * len(results)
+    answers: list[Optional[AnswerPassage]] = [None] * len(results)
     if request.query_text is not None and results:
         try:
             extracted_answers = await run_sync(
@@ -523,9 +521,11 @@ async def search_collection(
             for idx, extracted in enumerate(extracted_answers):
                 if extracted is None:
                     continue
-                answer_passages[idx] = extracted.passage
-                answer_starts[idx] = extracted.start
-                answer_ends[idx] = extracted.end
+                answers[idx] = AnswerPassage(
+                    passage=extracted.passage,
+                    start=extracted.start,
+                    end=extracted.end,
+                )
         except Exception:
             _logger.exception("Extractive QA inference failed for collection: %s", name)
 
@@ -534,9 +534,7 @@ async def search_collection(
             SearchResultResponse(
                 id=r.id, score=r.score, text=r.text,
                 metadata=r.metadata, vector=r.vector,
-                answer_passage=answer_passages[idx],
-                answer_passage_start=answer_starts[idx],
-                answer_passage_end=answer_ends[idx],
+                answer=answers[idx],
             )
             for idx, r in enumerate(results)
         ],
