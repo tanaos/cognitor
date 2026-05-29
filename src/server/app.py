@@ -32,10 +32,20 @@ from src.core.exceptions import (
 from src.embeddings.registry import EmbedderRegistry
 from src.embeddings.exceptions import EmbedderNotFoundError, EmbeddingError
 from src.search.extractive_qa import ExtractiveQA
+from src.telemetry.client import TelemetryClient, resolve_instance_id
+from src.telemetry.events import InstanceStarted
 
 
 setup_logging()
 _logger = logging.getLogger(__name__)
+
+
+def _app_version() -> str:
+    try:
+        from importlib.metadata import version
+        return version("cognitor")
+    except Exception:
+        return "unknown"
 
 
 async def _warm_models(
@@ -79,6 +89,13 @@ async def lifespan(app: FastAPI):
 
     models_ready = asyncio.Event()
     database = Database()
+
+    telemetry_client = TelemetryClient(
+        instance_id=resolve_instance_id(config.telemetry_instance_id),
+        endpoint=config.telemetry_endpoint if config.telemetry_enabled else "",
+        api_key=config.telemetry_api_key,
+    )
+
     app.state.app_state = AppState(
         config=config,
         database=database,
@@ -89,7 +106,18 @@ async def lifespan(app: FastAPI):
         embedder_registry=embedder_registry,
         qa_extractor=qa_extractor,
         models_ready=models_ready,
+        telemetry_client=telemetry_client,
     )
+
+    await telemetry_client.start()
+    telemetry_client.enqueue(
+        InstanceStarted(
+            version=_app_version(),
+            emb_model_count=len(config.emb_models),
+            collection_count=len(database.list_collections()),
+        )
+    )
+
     asyncio.create_task(
         _warm_models(
             embedder_registry,
@@ -100,6 +128,7 @@ async def lifespan(app: FastAPI):
     )
     yield
     _logger.info("Cognitor is shutting down")
+    await telemetry_client.stop()
     
 app = FastAPI(
     title="Cognitor REST API",

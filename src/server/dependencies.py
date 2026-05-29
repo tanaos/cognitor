@@ -6,6 +6,7 @@ from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.search.extractive_qa import ExtractiveQA
+from src.telemetry.client import TelemetryClient
 
 
 def get_config(request: Request) -> Config:
@@ -30,3 +31,7 @@ def get_qa_extractor(request: Request) -> ExtractiveQA:
 
 def get_models_ready(request: Request) -> asyncio.Event:
     return request.app.state.app_state.models_ready
+
+
+def get_telemetry_client(request: Request) -> TelemetryClient:
+    return request.app.state.app_state.telemetry_client

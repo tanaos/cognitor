@@ -5,6 +5,7 @@ from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.search.extractive_qa import ExtractiveQA
+from src.telemetry.client import TelemetryClient
 
 
 class AppState:
@@ -16,6 +17,7 @@ class AppState:
         embedder_registry: EmbedderRegistry,
         qa_extractor: ExtractiveQA,
         models_ready: asyncio.Event,
+        telemetry_client: TelemetryClient,
     ) -> None:
         self.config = config
         self.database = database
@@ -23,3 +25,4 @@ class AppState:
         self.embedder_registry = embedder_registry
         self.qa_extractor = qa_extractor
         self.models_ready = models_ready
+        self.telemetry_client = telemetry_client

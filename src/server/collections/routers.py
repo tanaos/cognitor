@@ -12,6 +12,7 @@ from src.server.dependencies import (
     get_qa_extractor,
     get_config,
     get_models_ready,
+    get_telemetry_client,
 )
 from src.core.database import Database
 from src.execution.batching import batch_add_documents
@@ -19,8 +20,17 @@ from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
 from src.search.extractive_qa import ExtractiveQA
+from src.telemetry.client import TelemetryClient
+from src.telemetry.events import (
+    CollectionCreated,
+    CollectionDeleted,
+    DocumentDeleted,
+    DocumentsAdded,
+    SearchPerformed,
+)
 import asyncio
 import logging
+import time
 
 
 _logger = logging.getLogger(__name__)
@@ -32,6 +42,7 @@ EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)
 QaExtractorDep = Annotated[ExtractiveQA, Depends(get_qa_extractor)]
 ConfigDep = Annotated[Config, Depends(get_config)]
 ModelsReadyDep = Annotated[asyncio.Event, Depends(get_models_ready)]
+TelemetryDep = Annotated[TelemetryClient, Depends(get_telemetry_client)]
 
 
 collections_router = APIRouter()
@@ -132,6 +143,7 @@ async def get_collection(name: str, database: DatabaseDep) -> Collection:
 async def create_collection(
     collection: CreateCollectionRequest, database: DatabaseDep, config: ConfigDep,
     embedder_registry: EmbedderRegistryDep, models_ready: ModelsReadyDep,
+    telemetry: TelemetryDep,
 ) -> Collection:
     """
     Create a new collection with the specified name and dimension.
@@ -147,6 +159,7 @@ async def create_collection(
         await models_ready.wait()
         dim = embedder_registry.get(emb_model).dim
     database.create_collection(collection.name, dim, emb_model)
+    telemetry.enqueue(CollectionCreated(dim=dim, has_emb_model=bool(emb_model)))
     return Collection(
         name=collection.name, dim=dim, doc_count=0,
         emb_model=emb_model
@@ -170,11 +183,12 @@ async def create_collection(
         }
     }
 )
-async def delete_collection(name: str, database: DatabaseDep) -> None:
+async def delete_collection(name: str, database: DatabaseDep, telemetry: TelemetryDep) -> None:
     """
     Delete a collection by name.
     """
     database.delete_collection(name)
+    telemetry.enqueue(CollectionDeleted())
 
 
 @collections_router.post(
@@ -206,6 +220,7 @@ async def add_documents(
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,
     models_ready: ModelsReadyDep,
+    telemetry: TelemetryDep,
 ) -> AddDocumentResponse:
     """
     Add a document to the specified collection.
@@ -215,8 +230,10 @@ async def add_documents(
     :func:`src.embeddings.register`.  In that case the server will embed
     ``texts`` automatically before storing them.
     """
+    t0 = time.monotonic()
     # Embed outside the lock — it's CPU-bound and does not touch shared storage.
     vectors = request.vectors
+    used_embedding = vectors is None
     if vectors is None:
         coll_info = database.get_collection_info(name)
         if not coll_info.emb_model:
@@ -234,6 +251,11 @@ async def add_documents(
             metadatas=request.metadatas,
             texts=request.texts,
         )
+    telemetry.enqueue(DocumentsAdded(
+        count=len(document_ids),
+        used_embedding=used_embedding,
+        duration_ms=(time.monotonic() - t0) * 1000,
+    ))
     return AddDocumentResponse(ids=document_ids)
 
 
@@ -266,6 +288,7 @@ async def bulk_add_documents(
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,
     models_ready: ModelsReadyDep,
+    telemetry: TelemetryDep,
     batch_size: int = Query(default=512, ge=1, le=4096),
 ) -> AddDocumentResponse:
     """
@@ -275,6 +298,8 @@ async def bulk_add_documents(
     payload in fixed-size chunks of *batch_size* to keep memory pressure
     bounded when embedding or storing thousands of vectors at once.
     """
+    t0 = time.monotonic()
+    used_embedding = request.vectors is None
     embedder = None
     if request.vectors is None:
         coll_info = database.get_collection_info(name)
@@ -297,6 +322,11 @@ async def bulk_add_documents(
                 batch_size=batch_size,
             )
         )
+    telemetry.enqueue(DocumentsAdded(
+        count=len(document_ids),
+        used_embedding=used_embedding,
+        duration_ms=(time.monotonic() - t0) * 1000,
+    ))
     return AddDocumentResponse(ids=document_ids)
 
 
@@ -398,6 +428,7 @@ async def delete_document(
     id: str,
     database: DatabaseDep,
     scheduler: SchedulerDep,
+    telemetry: TelemetryDep,
 ) -> None:
     """
     Delete a document by its ID from the specified collection.
@@ -410,6 +441,7 @@ async def delete_document(
     # decide whether to enqueue a compaction task. Calling it while holding the
     # lock would make it always see the lock as taken and never schedule.
     await scheduler.check_and_schedule(name)
+    telemetry.enqueue(DocumentDeleted())
 
 
 # TODO: if metadata end up being stored as vectors, this endpoint should be deleted
@@ -480,6 +512,7 @@ async def search_collection(
     qa_extractor: QaExtractorDep,
     scheduler: SchedulerDep,
     models_ready: ModelsReadyDep,
+    telemetry: TelemetryDep,
 ) -> SearchResponse:
     """
     Search for the most similar documents to a query vector.
@@ -489,6 +522,7 @@ async def search_collection(
     embedder registered for the collection's ``emb_model``.
     Optionally filter results by metadata key-value pairs.
     """
+    t0 = time.monotonic()
     # Embed outside the lock — it's CPU-bound and does not touch shared storage.
     query_vector = request.query_vector
     if query_vector is None:
@@ -529,6 +563,13 @@ async def search_collection(
         except Exception:
             _logger.exception("Extractive QA inference failed for collection: %s", name)
 
+    telemetry.enqueue(SearchPerformed(
+        duration_ms=(time.monotonic() - t0) * 1000,
+        top_k=request.top_k,
+        result_count=len(results),
+        used_filters=bool(request.filters),
+        used_query_text=request.query_text is not None,
+    ))
     return SearchResponse(
         results=[
             SearchResultResponse(
