@@ -85,13 +85,14 @@ class TelemetryClient:
         
         if not self._enabled:
             return
-        payload = dataclasses.asdict(event)
-        payload["event"] = _event_name(event)
-        payload["instance_id"] = self._instance_id
-        payload["ts"] = datetime.now(timezone.utc).isoformat()
+        event_dict = dataclasses.asdict(event)
+        event_dict["type"] = _event_name(event)
+        payload = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "instance_id": self._instance_id,
+            "event": event_dict,
+        }
         self._queue.append(payload)
-        if len(self._queue) >= self._max_batch_size:
-            self._flush_event.set()
 
     async def start(self) -> None:
         """
@@ -150,7 +151,7 @@ class TelemetryClient:
             response = await self._http.post(
                 self._endpoint,
                 json={"events": batch},
-                headers={"Authorization": f"Bearer {self._api_key}"},
+                headers={"X-API-Key": self._api_key},
             )
             response.raise_for_status()
         except Exception:

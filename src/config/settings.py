@@ -16,7 +16,7 @@ class Config(BaseSettings):
     qa_min_score: float = Field(default=0.05, ge=0.0, le=1.0)
 
     telemetry_enabled: bool = True
-    telemetry_endpoint: str = ""
+    telemetry_endpoint: str = "https://compute.tanaos.com/cognitor-telemetry/event"
     telemetry_api_key: str = "tk_ahS84hAzm7lU38lA84jGd7Bsl47Nm472"
     telemetry_instance_id: str = ""  # Auto-generated and persisted if left empty
 
