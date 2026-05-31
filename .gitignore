@@ -22,4 +22,4 @@ __pycache__/
 *.sqlite
 
 # Storage files
-storage/collections/
+storage/
