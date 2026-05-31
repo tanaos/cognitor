@@ -1,0 +1,36 @@
+name: Deploy Managed Cognitor
+
+on:
+  push:
+    branches:
+      - master
+      
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      env:
+        SERVER_KEY: ${{ secrets.SERVER_KEY }}
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SERVER_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
+
+    - name: Deploy to Server
+      run: |
+        ssh "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'EOF'
+          # Exit immediately if a command exits with a non-zero status
+          set -e
+          cd "${{ secrets.SERVER_APP_PATH }}"
+          git stash && git stash clear
+          git pull origin master
+          uv sync
+          sudo systemctl restart cognitor
+        EOF
