@@ -5,7 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Config(BaseSettings):
 
-    auth_enabled: bool = False
+    # When True, enables user registration and per-user collection isolation.
+    # auth_enabled is automatically enforced when multi_tenant is True.
+    multi_tenant: bool = False
 
     # Percentage of deleted documents in a collection that triggers compaction
     compaction_threshold: float = 0.20

@@ -7,17 +7,20 @@ from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, ValidationException
+from fastapi.openapi.utils import get_openapi
 import traceback
 
 from .base.routers import base_router
 from .collections.routers import collections_router
 from .admin.routers import admin_router
+from .auth.routers import auth_router
 from .responses import ErrorResponse
 from .middleware.auth import AuthMiddleware
 
 from src.utils.logging import setup_logging
 from src.config.settings import get_config
 from src.core.database import Database
+from src.storage.users import UserStore
 from src.core.state import AppState
 from src.execution.scheduler import CompactionScheduler
 from src.core.exceptions import (
@@ -89,6 +92,7 @@ async def lifespan(app: FastAPI):
 
     models_ready = asyncio.Event()
     database = Database()
+    user_store = UserStore(path="storage") if config.multi_tenant else None
 
     telemetry_client = TelemetryClient(
         instance_id=resolve_instance_id(config.telemetry_instance_id),
@@ -101,12 +105,12 @@ async def lifespan(app: FastAPI):
         database=database,
         compaction_scheduler=CompactionScheduler(
             threshold=config.compaction_threshold,
-            database=database,
         ),
         embedder_registry=embedder_registry,
         qa_extractor=qa_extractor,
         models_ready=models_ready,
         telemetry_client=telemetry_client,
+        user_store=user_store,
     )
 
     await telemetry_client.start()
@@ -261,3 +265,36 @@ app.include_router(
     router=admin_router,
     tags=["admin endpoints"]
 )
+
+app.include_router(
+    prefix="/auth",
+    router=auth_router,
+    tags=["authentication"]
+)
+
+
+def _custom_openapi():
+    # This custom OpenAPI function is needed to add the security scheme for API key 
+    # authentication, which ensures that the Swagger UI will show an "Authorize" button
+    # at the top right. 
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {})["securitySchemes"] = {
+        "ApiKeyHeader": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+            "description": "Enter your API key in the X-API-Key header",
+        },
+    }
+    schema["security"] = [{"ApiKeyHeader": []}]
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _custom_openapi
