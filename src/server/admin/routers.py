@@ -4,11 +4,13 @@ import time
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 
-from src.server.dependencies import get_scheduler, get_telemetry_client
+from src.server.dependencies import get_scheduler, get_telemetry_client, get_database
+from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
 from src.telemetry.client import TelemetryClient
 from src.telemetry.events import CompactionRun
 
+DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 TelemetryDep = Annotated[TelemetryClient, Depends(get_telemetry_client)]
 
@@ -37,7 +39,9 @@ class CompactionResponse(BaseModel):
         },
     },
 )
-async def compact_collection(name: str, scheduler: SchedulerDep, telemetry: TelemetryDep) -> CompactionResponse:
+async def compact_collection(
+    name: str, database: DatabaseDep, scheduler: SchedulerDep, telemetry: TelemetryDep
+) -> CompactionResponse:
     """
     Compact a collection by physically removing all soft-deleted vectors and
     reassigning document IDs.  Blocks until compaction is complete.
@@ -47,7 +51,7 @@ async def compact_collection(name: str, scheduler: SchedulerDep, telemetry: Tele
     """
     t0 = time.monotonic()
     try:
-        result = await scheduler.compact_now(name)
+        result = await scheduler.compact_now(name, database)
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

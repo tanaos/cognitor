@@ -21,37 +21,41 @@ class CompactionScheduler:
     and normal write operations (add / delete), preventing races between a
     concurrent write and an in-progress compaction that is rewriting the
     vector file and metadata store.
+
+    Lock keys are expected to be globally unique strings.  In single-tenant
+    mode the key is just the collection name; in multi-tenant mode callers
+    should pass ``"<user_id>:<collection_name>"`` to prevent cross-user
+    collisions.
     """
 
-    def __init__(self, threshold: float, database: "Database") -> None:
+    def __init__(self, threshold: float) -> None:
         """
         Args:
             threshold: Fraction of soft-deleted vectors (0-1) above which
                 automatic compaction is triggered.
-            database: The ``Database`` instance used to open collection storage.
         """
         self._threshold = threshold
-        self._database = database
         self._locks: dict[str, asyncio.Lock] = {}
         self._executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="compaction"
         )
 
-    def get_collection_lock(self, name: str) -> asyncio.Lock:
+    def get_collection_lock(self, key: str) -> asyncio.Lock:
         """
         Return the per-collection asyncio lock, creating it if necessary.
-        
-        Args:
-            name: Collection name
-            
-        Returns:
-            The asyncio.Lock instance for this collection.
-        """
-        if name not in self._locks:
-            self._locks[name] = asyncio.Lock()
-        return self._locks[name]
 
-    async def check_and_schedule(self, collection_name: str) -> None:
+        Args:
+            key: Globally unique collection key (e.g. ``"<user_id>:<name>"``
+                 in multi-tenant mode, plain name in single-tenant mode).
+
+        Returns:
+            The asyncio.Lock instance for this key.
+        """
+        if key not in self._locks:
+            self._locks[key] = asyncio.Lock()
+        return self._locks[key]
+
+    async def check_and_schedule(self, collection_name: str, database: "Database") -> None:
         """
         Check the deletion ratio for a collection and schedule a background
         compaction task if the threshold is exceeded and no compaction is
@@ -62,13 +66,15 @@ class CompactionScheduler:
 
         Args:
             collection_name: Name of the collection to inspect.
+            database: The Database instance that owns this collection.
         """
-        lock = self.get_collection_lock(collection_name)
+        lock_key = str(database.root_path / collection_name)
+        lock = self.get_collection_lock(lock_key)
         if lock.locked():
             return  # compaction already in progress
 
         try:
-            storage = self._database.get_collection_ref(collection_name)
+            storage = database.get_collection_ref(collection_name)
         except KeyError:
             return
 
@@ -82,27 +88,29 @@ class CompactionScheduler:
 
         if ratio >= self._threshold:
             _logger.info(
-                "Collection '%s': deletion ratio %.1f%% >= threshold %.1f%%, "
+                "Collection '%s': deletion ratio %.1f%% >= threshold %.1f%%,  "
                 "scheduling compaction",
                 collection_name,
                 ratio * 100,
                 self._threshold * 100,
             )
-            asyncio.create_task(self._run_compaction(collection_name))
+            asyncio.create_task(self._run_compaction(collection_name, database))
 
-    async def compact_now(self, collection_name: str) -> CompactionResult:
+    async def compact_now(self, collection_name: str, database: "Database") -> CompactionResult:
         """
         Force immediate compaction of a collection, blocking until done.
 
         Args:
             collection_name: Name of the collection to compact.
+            database: The Database instance that owns this collection.
 
         Returns:
             A ``CompactionResult`` describing the outcome.
         """
         from src.storage.compaction import compact
 
-        lock = self.get_collection_lock(collection_name)
+        lock_key = str(database.root_path / collection_name)
+        lock = self.get_collection_lock(lock_key)
         if lock.locked():
             raise RuntimeError(
                 f"Compaction is already running for collection '{collection_name}'"
@@ -110,21 +118,22 @@ class CompactionScheduler:
 
         async with lock:
             loop = asyncio.get_running_loop()
-            storage = self._database.get_collection_ref(collection_name)
+            storage = database.get_collection_ref(collection_name)
             return await loop.run_in_executor(
                 self._executor,
                 lambda: compact(collection_name, storage),
             )
 
-    async def _run_compaction(self, collection_name: str) -> None:
+    async def _run_compaction(self, collection_name: str, database: "Database") -> None:
         from src.storage.compaction import compact
 
-        lock = self.get_collection_lock(collection_name)
+        lock_key = str(database.root_path / collection_name)
+        lock = self.get_collection_lock(lock_key)
         async with lock:
             _logger.info("Compaction started for collection '%s'", collection_name)
             try:
                 loop = asyncio.get_running_loop()
-                storage = self._database.get_collection_ref(collection_name)
+                storage = database.get_collection_ref(collection_name)
                 result = await loop.run_in_executor(
                     self._executor,
                     lambda: compact(collection_name, storage),
@@ -140,3 +149,4 @@ class CompactionScheduler:
                 _logger.exception(
                     "Compaction failed for collection '%s'", collection_name
                 )
+

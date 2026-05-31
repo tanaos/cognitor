@@ -245,7 +245,7 @@ async def add_documents(
         vectors = embedder.embed(request.texts).tolist()
 
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         document_ids = collection.add_documents(
             vectors=vectors,
             metadatas=request.metadatas,
@@ -311,7 +311,7 @@ async def bulk_add_documents(
         embedder = embedder_registry.get(coll_info.emb_model)
 
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         document_ids = await run_sync(
             lambda: batch_add_documents(
                 collection=collection,
@@ -359,7 +359,7 @@ async def list_documents(
     coll_info = database.get_collection_info(name)
     collection = database.get_collection_service(name)
 
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         docs = collection.list_documents(offset=offset, limit=limit)
     documents = [
         DocumentResponse(id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata)
@@ -399,7 +399,7 @@ async def get_document(
     Retrieve a document by its ID from the specified collection.
     """
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         doc = collection.get_document(id)
     return DocumentResponse(
         id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata
@@ -434,13 +434,13 @@ async def delete_document(
     Delete a document by its ID from the specified collection.
     """
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         collection.delete_document(id)
 
     # check_and_schedule is called outside the lock: it inspects lock.locked() to
     # decide whether to enqueue a compaction task. Calling it while holding the
     # lock would make it always see the lock as taken and never schedule.
-    await scheduler.check_and_schedule(name)
+    await scheduler.check_and_schedule(name, database)
     telemetry.enqueue(DocumentDeleted())
 
 
@@ -472,7 +472,7 @@ async def update_document_metadata(
     Replace the metadata of a document by its ID.
     """
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         collection.update_document(id, request.metadata)
         doc = collection.get_document(id)
     return DocumentResponse(
@@ -536,7 +536,7 @@ async def search_collection(
         query_vector = embedder.embed([request.query_text]).tolist()[0]  # type: ignore[arg-type]
 
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(name):
+    async with scheduler.get_collection_lock(str(database.root_path / name)):
         results = collection.search(
             query_vector=query_vector,
             top_k=request.top_k,

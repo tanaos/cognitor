@@ -7,12 +7,19 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+_UNPROTECTED_PREFIXES = ("/auth/", "/ping", "/health", "/docs", "/openapi.json")
+
 
 def _extract_token(request: Request) -> Optional[str]:
-    authorization: str = request.headers.get("Authorization", "")
-    if authorization.lower().startswith("bearer "):
-        return authorization[7:]
     return request.headers.get("X-API-Key") or None
+
+
+def _unauthorized(message: str = "Unauthorized") -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={"message": message},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -21,21 +28,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        """
-        Middleware to enforce API key authentication if enabled in the configuration.
-        """
-        
-        if not request.app.state.app_state.config.auth_enabled:
+        config = request.app.state.app_state.config
+
+        # Always allow health/ping and auth endpoints without a token.
+        path = request.url.path
+        if any(path.startswith(p) for p in _UNPROTECTED_PREFIXES):
             return await call_next(request)
 
-        token = _extract_token(request)
-        expected: str = request.app.state.app_state.config.api_key
-
-        if not token or not expected or not secrets.compare_digest(token, expected):
-            return JSONResponse(
-                status_code=401,
-                content={"message": "Unauthorized"},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        if config.multi_tenant:
+            # Multi-tenant: resolve the calling user from the API key.
+            token = _extract_token(request)
+            if not token:
+                return _unauthorized()
+            user_store = request.app.state.app_state.user_store
+            user = user_store.get_user_by_api_key(token)
+            if user is None:
+                return _unauthorized()
+            request.state.current_user = user
+            return await call_next(request)
 
         return await call_next(request)
