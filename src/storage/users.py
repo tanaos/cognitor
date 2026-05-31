@@ -35,14 +35,31 @@ class UserStore:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        """Return ``"<salt_hex>:<dk_hex>"`` using PBKDF2-HMAC-SHA256."""
+        """
+        Return ``"<salt_hex>:<dk_hex>"`` using PBKDF2-HMAC-SHA256.
+        
+        Args:
+            password: The plaintext password to hash.
+        Returns:
+            A string containing the salt and derived key, separated by a colon.
+        """
+        
         salt = os.urandom(16)
         dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
         return salt.hex() + ":" + dk.hex()
 
     @staticmethod
     def _verify_password(password: str, stored: str) -> bool:
-        """Constant-time password verification against a stored hash."""
+        """
+        Constant-time password verification against a stored hash.
+        
+        Args:
+            password: The plaintext password to verify.
+            stored: The stored hash in the format produced by _hash_password.
+        Returns:
+            True if the password is correct, False otherwise.
+        """
+        
         parts = stored.split(":", 1)
         if len(parts) != 2:
             return False
@@ -59,9 +76,13 @@ class UserStore:
         """
         Register a new user and return the persisted User object (with id and api_key).
 
-        Raises:
-            UsernameAlreadyExistsError: If the username is already taken.
+        Args:
+            username: The desired username for the new user.
+            password: The plaintext password for the new user.
+        Returns:
+            The persisted User object.
         """
+        
         hashed = self._hash_password(password)
         api_key = secrets.token_hex(32)
         session = self.SessionLocal()
@@ -80,7 +101,15 @@ class UserStore:
             session.close()
 
     def get_user_by_api_key(self, api_key: str) -> Optional[User]:
-        """Return the User matching the given API key, or None."""
+        """
+        Return the User matching the given API key, or None.
+
+        Args:
+            api_key: The API key to search for.
+        Returns:
+            The User object if found, None otherwise.
+        """
+        
         session = self.SessionLocal()
         try:
             user = session.query(User).filter(User.api_key == api_key).first()
@@ -93,7 +122,14 @@ class UserStore:
     def verify_credentials(self, username: str, password: str) -> Optional[User]:
         """
         Verify a username/password pair and return the User on success, or None.
+        
+        Args:
+            username: The username to authenticate.
+            password: The plaintext password to verify.
+        Returns:
+            The User object if authentication is successful, None otherwise.
         """
+        
         session = self.SessionLocal()
         try:
             user = session.query(User).filter(User.username == username).first()
