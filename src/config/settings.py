@@ -16,6 +16,7 @@ class Config(BaseSettings):
     fallback_emb_model: str = "BAAI/bge-m3"
     qa_model: str = "deepset/xlm-roberta-base-squad2"
     qa_min_score: float = Field(default=0.05, ge=0.0, le=1.0)
+    rerank_model: str = "BAAI/bge-reranker-v2-m3"
 
     telemetry_enabled: bool = True
     telemetry_endpoint: str = "https://compute.tanaos.com/cognitor-telemetry/event"

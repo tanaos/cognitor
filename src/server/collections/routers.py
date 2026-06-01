@@ -10,6 +10,7 @@ from src.server.dependencies import (
     get_scheduler,
     get_embedder_registry,
     get_qa_extractor,
+    get_reranker,
     get_config,
     get_models_ready,
     get_telemetry_client,
@@ -20,6 +21,7 @@ from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
 from src.search.extractive_qa import ExtractiveQA
+from src.search.rerank import Reranker
 from src.telemetry.client import TelemetryClient
 from src.telemetry.events import (
     CollectionCreated,
@@ -40,6 +42,7 @@ DatabaseDep = Annotated[Database, Depends(get_database)]
 SchedulerDep = Annotated[CompactionScheduler, Depends(get_scheduler)]
 EmbedderRegistryDep = Annotated[EmbedderRegistry, Depends(get_embedder_registry)]
 QaExtractorDep = Annotated[ExtractiveQA, Depends(get_qa_extractor)]
+RerankerDep = Annotated[Reranker, Depends(get_reranker)]
 ConfigDep = Annotated[Config, Depends(get_config)]
 ModelsReadyDep = Annotated[asyncio.Event, Depends(get_models_ready)]
 TelemetryDep = Annotated[TelemetryClient, Depends(get_telemetry_client)]
@@ -510,6 +513,7 @@ async def search_collection(
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
     qa_extractor: QaExtractorDep,
+    reranker: RerankerDep,
     scheduler: SchedulerDep,
     models_ready: ModelsReadyDep,
     telemetry: TelemetryDep,
@@ -543,6 +547,12 @@ async def search_collection(
             filters=request.filters,
             include_vectors=request.include_vectors,
         )
+
+    if request.query_text is not None and results:
+        try:
+            results = await run_sync(reranker.rerank, request.query_text, results)
+        except Exception:
+            _logger.exception("Reranking failed for collection: %s", name)
 
     answers: list[Optional[AnswerPassage]] = [None] * len(results)
     if request.query_text is not None and results:
