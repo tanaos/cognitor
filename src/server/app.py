@@ -35,6 +35,7 @@ from src.core.exceptions import (
 from src.embeddings.registry import EmbedderRegistry
 from src.embeddings.exceptions import EmbedderNotFoundError, EmbeddingError
 from src.search.extractive_qa import ExtractiveQA
+from src.search.rerank import Reranker
 from src.telemetry.client import TelemetryClient, resolve_instance_id
 from src.telemetry.events import InstanceStarted
 
@@ -54,6 +55,7 @@ def _app_version() -> str:
 async def _warm_models(
     registry: EmbedderRegistry,
     qa_extractor: ExtractiveQA,
+    reranker: Reranker,
     model_names: list[str],
     event: asyncio.Event,
 ) -> None:
@@ -69,6 +71,12 @@ async def _warm_models(
         _logger.info("Warmed up extractive QA model: %s", qa_extractor.model_name)
     except Exception:
         _logger.exception("Failed to warm up extractive QA model: %s", qa_extractor.model_name)
+
+    try:
+        await run_sync(reranker.warmup)
+        _logger.info("Warmed up reranker model: %s", reranker.model_name)
+    except Exception:
+        _logger.exception("Failed to warm up reranker model: %s", reranker.model_name)
 
     event.set()
     _logger.info("All models ready")
@@ -90,6 +98,8 @@ async def lifespan(app: FastAPI):
         min_score=config.qa_min_score,
     )
 
+    reranker = Reranker(model_name=config.rerank_model)
+
     models_ready = asyncio.Event()
     database = Database()
     user_store = UserStore(path="storage") if config.multi_tenant else None
@@ -108,6 +118,7 @@ async def lifespan(app: FastAPI):
         ),
         embedder_registry=embedder_registry,
         qa_extractor=qa_extractor,
+        reranker=reranker,
         models_ready=models_ready,
         telemetry_client=telemetry_client,
         user_store=user_store,
@@ -126,6 +137,7 @@ async def lifespan(app: FastAPI):
         _warm_models(
             embedder_registry,
             qa_extractor,
+            reranker,
             config.emb_models,
             models_ready,
         )

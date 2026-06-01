@@ -7,6 +7,7 @@ from src.core.database import Database
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.search.extractive_qa import ExtractiveQA
+from src.search.rerank import Reranker
 from src.telemetry.client import TelemetryClient
 from src.storage.models import User
 from src.storage.users import UserStore
@@ -38,6 +39,10 @@ def get_embedder_registry(request: Request) -> EmbedderRegistry:
 
 def get_qa_extractor(request: Request) -> ExtractiveQA:
     return request.app.state.app_state.qa_extractor
+
+
+def get_reranker(request: Request) -> Reranker:
+    return request.app.state.app_state.reranker
 
 
 def get_models_ready(request: Request) -> asyncio.Event:
