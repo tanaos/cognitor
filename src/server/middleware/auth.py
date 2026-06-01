@@ -6,8 +6,23 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+import logging
 
-_UNPROTECTED_PREFIXES = ("/", "/auth/", "/health", "/docs", "/openapi.json")
+
+logger = logging.getLogger(__name__)
+
+_UNPROTECTED_PREFIXES = (
+    # Health check
+    "/",
+    "/health",
+    
+    # Auth endpoints
+    "/auth/register", 
+    "/auth/login",
+    
+    # Docs
+    "/docs", "/openapi.json"
+)
 
 
 def _extract_token(request: Request) -> Optional[str]:
@@ -29,10 +44,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         config = request.app.state.app_state.config
-
+        
         # Always allow health/ping and auth endpoints without a token.
         path = request.url.path
-        if any(path.startswith(p) for p in _UNPROTECTED_PREFIXES):
+        if any(path == p for p in _UNPROTECTED_PREFIXES):
             return await call_next(request)
 
         if config.multi_tenant:
