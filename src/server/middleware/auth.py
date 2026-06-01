@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-_UNPROTECTED_PREFIXES = ("/auth/", "/ping", "/health", "/docs", "/openapi.json")
+_UNPROTECTED_PREFIXES = ("/", "/auth/", "/health", "/docs", "/openapi.json")
 
 
 def _extract_token(request: Request) -> Optional[str]:
