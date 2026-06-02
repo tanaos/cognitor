@@ -1,18 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
 
-from src.server.dependencies import get_user_store
+from src.config.settings import Config
+from src.server.dependencies import get_config, get_user_store
 from src.storage.users import UserStore, UsernameAlreadyExistsError
 
 
 auth_router = APIRouter()
 
 
-def _require_user_store(user_store: UserStore = Depends(get_user_store)) -> UserStore:
-    if user_store is None:
+def _require_user_store(
+    config: Config = Depends(get_config),
+    user_store: UserStore | None = Depends(get_user_store),
+) -> UserStore:
+    if not config.multi_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Multi-tenant mode is not enabled",
+        )
+    if config.auth_mode != "local" or user_store is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Local auth is disabled",
         )
     return user_store
 

@@ -14,6 +14,7 @@ from .base.routers import base_router
 from .collections.routers import collections_router
 from .admin.routers import admin_router
 from .auth.routers import auth_router
+from .auth.service import build_authenticator
 from .responses import ErrorResponse
 from .middleware.auth import AuthMiddleware
 
@@ -102,7 +103,8 @@ async def lifespan(app: FastAPI):
 
     models_ready = asyncio.Event()
     database = Database()
-    user_store = UserStore(path="storage") if config.multi_tenant else None
+    user_store = UserStore(path="storage") if config.multi_tenant and config.auth_mode == "local" else None
+    authenticator = build_authenticator(config, user_store)
 
     telemetry_client = TelemetryClient(
         instance_id=resolve_instance_id(config.telemetry_instance_id),
@@ -121,6 +123,7 @@ async def lifespan(app: FastAPI):
         reranker=reranker,
         models_ready=models_ready,
         telemetry_client=telemetry_client,
+        authenticator=authenticator,
         user_store=user_store,
     )
 
@@ -144,6 +147,8 @@ async def lifespan(app: FastAPI):
     )
     yield
     _logger.info("Cognitor is shutting down")
+    if authenticator is not None:
+        await authenticator.aclose()
     await telemetry_client.stop()
     
 app = FastAPI(

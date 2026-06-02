@@ -1,5 +1,4 @@
 from collections.abc import Callable, Awaitable
-import secrets
 from typing import Optional
 
 from fastapi import Request
@@ -55,8 +54,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             token = _extract_token(request)
             if not token:
                 return _unauthorized()
-            user_store = request.app.state.app_state.user_store
-            user = user_store.get_user_by_api_key(token)
+            authenticator = request.app.state.app_state.authenticator
+            if authenticator is None:
+                logger.error("Authentication is enabled but no authenticator is configured")
+                return JSONResponse(
+                    status_code=500,
+                    content={"message": "Authentication is not configured"},
+                )
+            user = await authenticator.authenticate(token)
             if user is None:
                 return _unauthorized()
             request.state.current_user = user

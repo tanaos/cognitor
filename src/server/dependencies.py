@@ -8,8 +8,8 @@ from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.search.extractive_qa import ExtractiveQA
 from src.search.rerank import Reranker
+from src.server.auth.service import AuthenticatedUser
 from src.telemetry.client import TelemetryClient
-from src.storage.models import User
 from src.storage.users import UserStore
 
 
@@ -24,7 +24,7 @@ def get_database(request: Request) -> Database:
     """
     config = request.app.state.app_state.config
     if config.multi_tenant:
-        user: User = _require_current_user(request)
+        user = _require_current_user(request)
         return Database(root_path=f"storage/collections/{user.id}")
     return request.app.state.app_state.database
 
@@ -53,17 +53,17 @@ def get_telemetry_client(request: Request) -> TelemetryClient:
     return request.app.state.app_state.telemetry_client
 
 
-def get_user_store(request: Request) -> UserStore:
+def get_user_store(request: Request) -> Optional[UserStore]:
     return request.app.state.app_state.user_store
 
 
-def get_current_user(request: Request) -> Optional[User]:
-    """Return the authenticated User, or None when multi_tenant is disabled."""
+def get_current_user(request: Request) -> Optional[AuthenticatedUser]:
+    """Return the authenticated user, or None when multi_tenant is disabled."""
     return getattr(request.state, "current_user", None)
 
 
-def _require_current_user(request: Request) -> User:
-    """Return the authenticated User, raising 401 if not present."""
+def _require_current_user(request: Request) -> AuthenticatedUser:
+    """Return the authenticated user, raising 401 if not present."""
     user = getattr(request.state, "current_user", None)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
@@ -76,7 +76,7 @@ def collection_lock_key(request: Request, collection_name: str) -> str:
     """
     config = request.app.state.app_state.config
     if config.multi_tenant:
-        user: User = _require_current_user(request)
+        user = _require_current_user(request)
         return f"{user.id}:{collection_name}"
     return collection_name
 

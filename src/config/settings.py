@@ -1,5 +1,7 @@
 from functools import lru_cache
-from pydantic import Field
+from typing import Literal
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +10,11 @@ class Config(BaseSettings):
     # When True, enables user registration and per-user collection isolation.
     # auth_enabled is automatically enforced when multi_tenant is True.
     multi_tenant: bool = False
+    auth_mode: Literal["local", "remote"] = "local"
+    remote_auth_url: str = ""
+    remote_auth_http_method: Literal["GET", "POST"] = "GET"
+    remote_auth_timeout_seconds: float = Field(default=5.0, gt=0.0)
+    remote_auth_cache_ttl_seconds: int = Field(default=300, ge=0)
 
     # Percentage of deleted documents in a collection that triggers compaction
     compaction_threshold: float = 0.20
@@ -22,6 +29,12 @@ class Config(BaseSettings):
     telemetry_endpoint: str = "https://compute.tanaos.com/cognitor-telemetry/event"
     telemetry_api_key: str = "tk_ahS84hAzm7lU38lA84jGd7Bsl47Nm472"
     telemetry_instance_id: str = ""  # Auto-generated and persisted if left empty
+
+    @model_validator(mode="after")
+    def validate_remote_auth(self) -> "Config":
+        if self.multi_tenant and self.auth_mode == "remote" and not self.remote_auth_url:
+            raise ValueError("remote_auth_url must be set when auth_mode is 'remote'")
+        return self
 
     @property
     def default_emb_model(self) -> str:

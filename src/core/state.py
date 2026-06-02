@@ -7,6 +7,7 @@ from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.search.extractive_qa import ExtractiveQA
 from src.search.rerank import Reranker
+from src.server.auth.service import Authenticator
 from src.telemetry.client import TelemetryClient
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ class AppState:
         reranker: Reranker,
         models_ready: asyncio.Event,
         telemetry_client: TelemetryClient,
+        authenticator: Optional[Authenticator] = None,
         user_store: Optional["UserStore"] = None,
     ) -> None:
         self.config = config
@@ -34,5 +36,6 @@ class AppState:
         self.reranker = reranker
         self.models_ready = models_ready
         self.telemetry_client = telemetry_client
+        self.authenticator = authenticator
         self.user_store = user_store
 
