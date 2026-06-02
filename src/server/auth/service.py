@@ -7,8 +7,6 @@ from time import monotonic
 import httpx
 
 from src.config.settings import Config
-from src.storage.models import User
-from src.storage.users import UserStore
 
 
 logger = logging.getLogger(__name__)
@@ -27,17 +25,6 @@ class Authenticator:
 
     async def aclose(self) -> None:
         return None
-
-
-class LocalAuthenticator(Authenticator):
-    def __init__(self, user_store: UserStore) -> None:
-        self._user_store = user_store
-
-    async def authenticate(self, api_key: str) -> AuthenticatedUser | None:
-        user = self._user_store.get_user_by_api_key(api_key)
-        if user is None:
-            return None
-        return _to_authenticated_user(user)
 
 
 @dataclass(slots=True)
@@ -122,24 +109,12 @@ class RemoteAuthenticator(Authenticator):
         return await self._http.get(self._endpoint, headers=headers)
 
 
-def build_authenticator(config: Config, user_store: UserStore | None) -> Authenticator | None:
+def build_authenticator(config: Config) -> Authenticator | None:
     if not config.multi_tenant:
         return None
-    if config.auth_mode == "remote":
-        return RemoteAuthenticator(
-            endpoint=config.remote_auth_url,
-            http_method=config.remote_auth_http_method,
-            timeout=config.remote_auth_timeout_seconds,
-            cache_ttl_seconds=config.remote_auth_cache_ttl_seconds,
-        )
-    if user_store is None:
-        raise ValueError("Local authentication requires a user store")
-    return LocalAuthenticator(user_store)
-
-
-def _to_authenticated_user(user: User) -> AuthenticatedUser:
-    return AuthenticatedUser(
-        id=user.id,
-        username=user.username,
-        api_key=user.api_key,
+    return RemoteAuthenticator(
+        endpoint=config.remote_auth_url,
+        http_method=config.remote_auth_http_method,
+        timeout=config.remote_auth_timeout_seconds,
+        cache_ttl_seconds=config.remote_auth_cache_ttl_seconds,
     )

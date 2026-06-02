@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from src.config.settings import Config
 from src.core.database import Database
@@ -9,9 +9,6 @@ from src.search.extractive_qa import ExtractiveQA
 from src.search.rerank import Reranker
 from src.server.auth.service import Authenticator
 from src.telemetry.client import TelemetryClient
-
-if TYPE_CHECKING:
-    from src.storage.users import UserStore
 
 
 class AppState:
@@ -26,7 +23,6 @@ class AppState:
         models_ready: asyncio.Event,
         telemetry_client: TelemetryClient,
         authenticator: Optional[Authenticator] = None,
-        user_store: Optional["UserStore"] = None,
     ) -> None:
         self.config = config
         self.database = database
@@ -37,5 +33,4 @@ class AppState:
         self.models_ready = models_ready
         self.telemetry_client = telemetry_client
         self.authenticator = authenticator
-        self.user_store = user_store
 

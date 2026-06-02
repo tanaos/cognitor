@@ -7,10 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Config(BaseSettings):
 
-    # When True, enables user registration and per-user collection isolation.
-    # auth_enabled is automatically enforced when multi_tenant is True.
+    # When True, enables remote authentication and per-user collection isolation.
     multi_tenant: bool = False
-    auth_mode: Literal["local", "remote"] = "local"
     remote_auth_url: str = ""
     remote_auth_http_method: Literal["GET", "POST"] = "GET"
     remote_auth_timeout_seconds: float = Field(default=5.0, gt=0.0)
@@ -32,8 +30,8 @@ class Config(BaseSettings):
 
     @model_validator(mode="after")
     def validate_remote_auth(self) -> "Config":
-        if self.multi_tenant and self.auth_mode == "remote" and not self.remote_auth_url:
-            raise ValueError("remote_auth_url must be set when auth_mode is 'remote'")
+        if self.multi_tenant and not self.remote_auth_url:
+            raise ValueError("remote_auth_url must be set when multi_tenant is enabled")
         return self
 
     @property

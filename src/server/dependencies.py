@@ -10,7 +10,6 @@ from src.search.extractive_qa import ExtractiveQA
 from src.search.rerank import Reranker
 from src.server.auth.service import AuthenticatedUser
 from src.telemetry.client import TelemetryClient
-from src.storage.users import UserStore
 
 
 def get_config(request: Request) -> Config:
@@ -51,10 +50,6 @@ def get_models_ready(request: Request) -> asyncio.Event:
 
 def get_telemetry_client(request: Request) -> TelemetryClient:
     return request.app.state.app_state.telemetry_client
-
-
-def get_user_store(request: Request) -> Optional[UserStore]:
-    return request.app.state.app_state.user_store
 
 
 def get_current_user(request: Request) -> Optional[AuthenticatedUser]:

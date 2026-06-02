@@ -15,10 +15,6 @@ _UNPROTECTED_PREFIXES = (
     "/",
     "/health/ready",
     
-    # Auth endpoints
-    "/auth/register", 
-    "/auth/login",
-    
     # Docs
     "/docs", "/openapi.json"
 )
@@ -44,7 +40,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         config = request.app.state.app_state.config
         
-        # Always allow health/ping and auth endpoints without a token.
+        # Always allow health/ping and docs without a token.
         path = request.url.path
         if any(path == p for p in _UNPROTECTED_PREFIXES):
             return await call_next(request)
