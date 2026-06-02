@@ -548,14 +548,22 @@ async def search_collection(
             include_vectors=request.include_vectors,
         )
 
-    if request.query_text is not None and results:
+    # Reranking is only applied when:
+    # - the query is textual (reranking a pure vector query would not make sense)
+    # - there are results to rerank (skip the step when there are no matches)
+    # - the client has not explicitly disabled it (it can be costly, so we want to allow skipping it)
+    if request.query_text is not None and results and request.perform_reranking:
         try:
             results = await run_sync(reranker.rerank, request.query_text, results)
         except Exception:
             _logger.exception("Reranking failed for collection: %s", name)
 
+    # Extractive QA is only applied when:
+    # - the query is textual (it would not make sense to extract an answer from a non-textual query)
+    # - there are results to extract from (skip the step when there are no matches)
+    # - the client has not explicitly disabled it (it can be costly, so we want to allow skipping it)
     answers: list[Optional[AnswerPassage]] = [None] * len(results)
-    if request.query_text is not None and results:
+    if request.query_text is not None and results and request.perform_extractive_qa:
         try:
             extracted_answers = await run_sync(
                 qa_extractor.extract_many,
@@ -579,6 +587,8 @@ async def search_collection(
         result_count=len(results),
         used_filters=bool(request.filters),
         used_query_text=request.query_text is not None,
+        reranking_applied=request.perform_reranking,
+        extractive_qa_applied=request.perform_extractive_qa,
     ))
     return SearchResponse(
         results=[

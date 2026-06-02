@@ -57,9 +57,11 @@ class ListDocumentsResponse(BaseModel):
 class SearchRequest(BaseModel):
     query_vector: Optional[Vector] = None
     query_text: Optional[str] = None
-    top_k: int = Field(default=10, ge=1)
+    top_k: int = Field(default=5, ge=1)
     filters: Optional[Metadata] = None
     include_vectors: bool = False
+    perform_extractive_qa: bool = True
+    perform_reranking: bool = True
 
     @model_validator(mode="after")
     def _require_query(self) -> "SearchRequest":

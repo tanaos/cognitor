@@ -137,7 +137,7 @@ class Collection:
     def search(
         self,
         query_vector: Vector,
-        top_k: int = 10,
+        top_k: int = 5,
         filters: Optional[FilterSpec] = None,
         include_vectors: bool = False,
     ) -> list[SearchResult]:

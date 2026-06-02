@@ -15,6 +15,8 @@ class SearchPerformed:
     result_count: int
     used_filters: bool
     used_query_text: bool
+    reranking_applied: bool
+    extractive_qa_applied: bool
 
 
 @dataclass

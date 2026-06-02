@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 _UNPROTECTED_PREFIXES = (
     # Health check
     "/",
-    "/health",
+    "/health/ready",
     
     # Auth endpoints
     "/auth/register", 
