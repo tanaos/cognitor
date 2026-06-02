@@ -13,7 +13,6 @@ import traceback
 from .base.routers import base_router
 from .collections.routers import collections_router
 from .admin.routers import admin_router
-from .auth.routers import auth_router
 from .auth.service import build_authenticator
 from .responses import ErrorResponse
 from .middleware.auth import AuthMiddleware
@@ -21,7 +20,6 @@ from .middleware.auth import AuthMiddleware
 from src.utils.logging import setup_logging
 from src.config.settings import get_config
 from src.core.database import Database
-from src.storage.users import UserStore
 from src.core.state import AppState
 from src.execution.scheduler import CompactionScheduler
 from src.core.exceptions import (
@@ -103,8 +101,7 @@ async def lifespan(app: FastAPI):
 
     models_ready = asyncio.Event()
     database = Database()
-    user_store = UserStore(path="storage") if config.multi_tenant and config.auth_mode == "local" else None
-    authenticator = build_authenticator(config, user_store)
+    authenticator = build_authenticator(config)
 
     telemetry_client = TelemetryClient(
         instance_id=resolve_instance_id(config.telemetry_instance_id),
@@ -124,7 +121,6 @@ async def lifespan(app: FastAPI):
         models_ready=models_ready,
         telemetry_client=telemetry_client,
         authenticator=authenticator,
-        user_store=user_store,
     )
 
     await telemetry_client.start()
@@ -281,12 +277,6 @@ app.include_router(
     prefix="/admin",
     router=admin_router,
     tags=["admin endpoints"]
-)
-
-app.include_router(
-    prefix="/auth",
-    router=auth_router,
-    tags=["authentication"]
 )
 
 
