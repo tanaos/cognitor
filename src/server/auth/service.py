@@ -110,11 +110,11 @@ class RemoteAuthenticator(Authenticator):
 
 
 def build_authenticator(config: Config) -> Authenticator | None:
-    if not config.multi_tenant:
+    if not config.MULTI_TENANT:
         return None
     return RemoteAuthenticator(
-        endpoint=config.remote_auth_url,
-        http_method=config.remote_auth_http_method,
-        timeout=config.remote_auth_timeout_seconds,
-        cache_ttl_seconds=config.remote_auth_cache_ttl_seconds,
+        endpoint=config.REMOTE_AUTH_URL,
+        http_method=config.REMOTE_AUTH_HTTP_METHOD,
+        timeout=config.REMOTE_AUTH_TIMEOUT_SECONDS,
+        cache_ttl_seconds=config.REMOTE_AUTH_CACHE_TTL_SECONDS,
     )

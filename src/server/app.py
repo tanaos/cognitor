@@ -88,32 +88,32 @@ async def lifespan(app: FastAPI):
 
     from src.embeddings.providers.sentence_transformers import register_sentence_transformers
     embedder_registry = EmbedderRegistry()
-    for model_name in config.emb_models:
+    for model_name in config.EMB_MODELS:
         register_sentence_transformers(embedder_registry, model_name)
         _logger.info("Registered sentence-transformers embedder: %s", model_name)
 
     qa_extractor = ExtractiveQA(
-        model_name=config.qa_model,
-        min_score=config.qa_min_score,
+        model_name=config.QA_MODEL,
+        min_score=config.QA_MIN_SCORE,
     )
 
-    reranker = Reranker(model_name=config.rerank_model)
+    reranker = Reranker(model_name=config.RERANK_MODEL)
 
     models_ready = asyncio.Event()
     database = Database()
     authenticator = build_authenticator(config)
 
     telemetry_client = TelemetryClient(
-        instance_id=resolve_instance_id(config.telemetry_instance_id),
-        endpoint=config.telemetry_endpoint if config.telemetry_enabled else "",
-        api_key=config.telemetry_api_key,
+        instance_id=resolve_instance_id(config.TELEMETRY_INSTANCE_ID),
+        endpoint=config.TELEMETRY_ENDPOINT if config.TELEMETRY_ENABLED else "",
+        api_key=config.TELEMETRY_API_KEY,
     )
 
     app.state.app_state = AppState(
         config=config,
         database=database,
         compaction_scheduler=CompactionScheduler(
-            threshold=config.compaction_threshold,
+            threshold=config.COMPACTION_THRESHOLD,
         ),
         embedder_registry=embedder_registry,
         qa_extractor=qa_extractor,
@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
     telemetry_client.enqueue(
         InstanceStarted(
             version=_app_version(),
-            emb_model_count=len(config.emb_models),
+            emb_model_count=len(config.EMB_MODELS),
             collection_count=len(database.list_collections()),
         )
     )
@@ -137,7 +137,7 @@ async def lifespan(app: FastAPI):
             embedder_registry,
             qa_extractor,
             reranker,
-            config.emb_models,
+            config.EMB_MODELS,
             models_ready,
         )
     )

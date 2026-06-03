@@ -45,7 +45,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if any(path == p for p in _UNPROTECTED_PREFIXES):
             return await call_next(request)
 
-        if config.multi_tenant:
+        if config.MULTI_TENANT:
             # Multi-tenant: resolve the calling user from the API key.
             token = _extract_token(request)
             if not token:

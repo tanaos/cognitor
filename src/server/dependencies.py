@@ -18,11 +18,11 @@ def get_config(request: Request) -> Config:
 
 def get_database(request: Request) -> Database:
     """
-    Return a Database scoped to the current user when multi_tenant is enabled,
+    Return a Database scoped to the current user when MULTI_TENANT is enabled,
     otherwise return the global Database instance.
     """
     config = request.app.state.app_state.config
-    if config.multi_tenant:
+    if config.MULTI_TENANT:
         user = _require_current_user(request)
         return Database(root_path=f"storage/collections/{user.id}")
     return request.app.state.app_state.database
@@ -53,7 +53,7 @@ def get_telemetry_client(request: Request) -> TelemetryClient:
 
 
 def get_current_user(request: Request) -> Optional[AuthenticatedUser]:
-    """Return the authenticated user, or None when multi_tenant is disabled."""
+    """Return the authenticated user, or None when MULTI_TENANT is disabled."""
     return getattr(request.state, "current_user", None)
 
 
@@ -70,7 +70,7 @@ def collection_lock_key(request: Request, collection_name: str) -> str:
     Build the per-collection lock key, namespaced by user in multi-tenant mode.
     """
     config = request.app.state.app_state.config
-    if config.multi_tenant:
+    if config.MULTI_TENANT:
         user = _require_current_user(request)
         return f"{user.id}:{collection_name}"
     return collection_name

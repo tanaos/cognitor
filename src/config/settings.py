@@ -8,35 +8,35 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Config(BaseSettings):
 
     # When True, enables remote authentication and per-user collection isolation.
-    multi_tenant: bool = False
-    remote_auth_url: str = ""
-    remote_auth_http_method: Literal["GET", "POST"] = "GET"
-    remote_auth_timeout_seconds: float = Field(default=5.0, gt=0.0)
-    remote_auth_cache_ttl_seconds: int = Field(default=300, ge=0)
+    MULTI_TENANT: bool = False
+    REMOTE_AUTH_URL: str = ""
+    REMOTE_AUTH_HTTP_METHOD: Literal["GET", "POST"] = "GET"
+    REMOTE_AUTH_TIMEOUT_SECONDS: float = Field(default=5.0, gt=0.0)
+    REMOTE_AUTH_CACHE_TTL_SECONDS: int = Field(default=300, ge=0)
 
     # Percentage of deleted documents in a collection that triggers compaction
-    compaction_threshold: float = 0.20
+    COMPACTION_THRESHOLD: float = 0.20
 
-    emb_models: list[str] = ["BAAI/bge-m3"]
-    fallback_emb_model: str = "BAAI/bge-m3"
-    qa_model: str = "deepset/xlm-roberta-base-squad2"
-    qa_min_score: float = Field(default=0.05, ge=0.0, le=1.0)
-    rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    EMB_MODELS: list[str] = ["BAAI/bge-m3"]
+    FALLBACK_EMB_MODEL: str = "BAAI/bge-m3"
+    QA_MODEL: str = "deepset/xlm-roberta-base-squad2"
+    QA_MIN_SCORE: float = Field(default=0.05, ge=0.0, le=1.0)
+    RERANK_MODEL: str = "BAAI/bge-reranker-v2-m3"
 
-    telemetry_enabled: bool = True
-    telemetry_endpoint: str = "https://compute.tanaos.com/cognitor-telemetry/event"
-    telemetry_api_key: str = "tk_ahS84hAzm7lU38lA84jGd7Bsl47Nm472"
-    telemetry_instance_id: str = ""  # Auto-generated and persisted if left empty
+    TELEMETRY_ENABLED: bool = True
+    TELEMETRY_ENDPOINT: str = "https://compute.tanaos.com/cognitor-telemetry/event"
+    TELEMETRY_API_KEY: str = "tk_ahS84hAzm7lU38lA84jGd7Bsl47Nm472"
+    TELEMETRY_INSTANCE_ID: str = ""  # Auto-generated and persisted if left empty
 
     @model_validator(mode="after")
     def validate_remote_auth(self) -> "Config":
-        if self.multi_tenant and not self.remote_auth_url:
-            raise ValueError("remote_auth_url must be set when multi_tenant is enabled")
+        if self.MULTI_TENANT and not self.REMOTE_AUTH_URL:
+            raise ValueError("REMOTE_AUTH_URL must be set when MULTI_TENANT is enabled")
         return self
 
     @property
-    def default_emb_model(self) -> str:
-        return self.emb_models[0] if self.emb_models else self.fallback_emb_model
+    def DEFAULT_EMB_MODEL(self) -> str:
+        return self.EMB_MODELS[0] if self.EMB_MODELS else self.FALLBACK_EMB_MODEL
 
     model_config = SettingsConfigDict(
         env_file=".env",

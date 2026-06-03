@@ -154,7 +154,7 @@ async def create_collection(
     ``dim`` may be omitted when ``emb_model`` is set (or a default is configured):
     the server resolves it automatically from the registered embedder.
     """
-    emb_model = collection.emb_model or config.default_emb_model
+    emb_model = collection.emb_model or config.DEFAULT_EMB_MODEL
     dim = collection.dim
     if dim is None:
         if not emb_model:
