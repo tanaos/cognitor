@@ -1,0 +1,26 @@
+services:
+  cognitor:
+    build: .
+    container_name: cognitor
+
+    ports:
+      - "7530:7530"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./src:/app/src
+      - cognitor_storage:/app/storage
+
+    command: >
+      uvicorn src.server.app:app
+      --host 0.0.0.0
+      --port 7530
+      --reload
+
+    restart: unless-stopped
+
+volumes:
+  cognitor_storage:
+    name: cognitor_storage
