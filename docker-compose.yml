@@ -21,6 +21,26 @@ services:
 
     restart: unless-stopped
 
+  cognitor-worker:
+    image: ghcr.io/tanaos/cognitor-worker:latest
+    container_name: cognitor-worker
+    profiles:
+      - worker
+    depends_on:
+      - cognitor
+    environment:
+      DOCS_FOLDER: /data/docs
+      COGNITOR_URL: ${COGNITOR_WORKER_URL:-http://cognitor:7530}
+      COGNITOR_COLLECTION_NAME: ${COGNITOR_COLLECTION_NAME}
+      COGNITOR_API_KEY: ${COGNITOR_API_KEY:-}
+      SYNC_INTERVAL_SECONDS: ${SYNC_INTERVAL_SECONDS:-300}
+    volumes:
+      - type: bind
+        source: ${DOCS_FOLDER}
+        target: /data/docs
+        read_only: true
+    restart: unless-stopped
+
 volumes:
   cognitor_storage:
     name: cognitor_storage
