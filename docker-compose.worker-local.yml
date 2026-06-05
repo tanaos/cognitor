@@ -1,0 +1,6 @@
+services:
+  cognitor-worker:
+    build:
+      context: ../cognitor-worker
+      dockerfile: Dockerfile
+    image: cognitor-worker:local
