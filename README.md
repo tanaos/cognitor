@@ -34,10 +34,35 @@ Stop them with
 docker compose --profile worker down --remove-orphans
 ```
 
+### Search platform + local worker source (development)
+
+If you have both repositories side-by-side:
+
+- `.../cognitor`
+- `.../cognitor-worker`
+
+you can build and run the worker from local source (instead of pulling from `ghcr.io`) by adding the local override file:
+
+```bash
+docker compose \
+    -f docker-compose.yml \
+    -f docker-compose.worker-local.yml \
+    --profile worker up -d --build
+```
+
+Stop the stack with:
+
+```bash
+docker compose \
+    -f docker-compose.yml \
+    -f docker-compose.worker-local.yml \
+    --profile worker down --remove-orphans
+```
+
 ## 🔒 Security & Privacy
 
 ### Telemetry
 
-By default, we gather anonymous usage data and statistics to help us improve Cognitor. The telemetry data does not include any personally identifiable information (PII) or sensitive data. You can inspect the exact fields we collect [from this file](src/telemetry/events.py).
+By default, we gather a small amount of anonymous usage data which helps us improve Cognitor. This does not include any personally identifiable information (PII) or sensitive data. You can inspect the exact fields we collect [from this file](src/telemetry/events.py).
 
 If you wish to opt out of telemetry, you can do so by setting `TELEMETRY_ENABLED=false` in your environment variables or configuration file.

@@ -14,6 +14,7 @@
 # ./scripts/nuke_db.sh --local-only
 # ./scripts/nuke_db.sh --docker-only
 # ./scripts/nuke_db.sh --yes
+# ./scripts/nuke_db.sh --help
 # ---------------------------------------------------------
 
 set -euo pipefail
