@@ -59,6 +59,14 @@ docker compose \
     --profile worker down --remove-orphans
 ```
 
+## No data? No problem.
+
+If you don't have your own data to test with, you can use the included script to seed the database with a sample e-commerce products collection:
+
+```bash
+python scripts/dev/seed_ecommerce.py
+```
+
 ## 🔒 Security & Privacy
 
 ### Telemetry
