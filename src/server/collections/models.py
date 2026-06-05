@@ -61,7 +61,7 @@ class SearchRequest(BaseModel):
     filters: Optional[Metadata] = None
     include_vectors: bool = False
     perform_extractive_qa: bool = True
-    perform_reranking: bool = True
+    perform_reranking: bool = False
 
     @model_validator(mode="after")
     def _require_query(self) -> "SearchRequest":
