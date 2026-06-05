@@ -19,6 +19,17 @@ services:
       --port 7530
       --reload
 
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:7530/', timeout=3)
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
     restart: unless-stopped
 
   cognitor-worker:
@@ -26,17 +37,19 @@ services:
     container_name: cognitor-worker
     profiles:
       - worker
+    env_file:
+      - .env
     depends_on:
-      - cognitor
+      cognitor:
+        condition: service_healthy
     environment:
       DOCS_FOLDER: /data/docs
-      COGNITOR_URL: ${COGNITOR_WORKER_URL:-http://cognitor:7530}
-      COGNITOR_COLLECTION_NAME: ${COGNITOR_COLLECTION_NAME}
-      COGNITOR_API_KEY: ${COGNITOR_API_KEY:-}
-      SYNC_INTERVAL_SECONDS: ${SYNC_INTERVAL_SECONDS:-300}
+      COGNITOR_URL: ${COGNITOR_URL:-http://cognitor:7530}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - type: bind
-        source: ${DOCS_FOLDER}
+        source: ${DOCS_FOLDER?DOCS_FOLDER must be set in .env}
         target: /data/docs
         read_only: true
     restart: unless-stopped
