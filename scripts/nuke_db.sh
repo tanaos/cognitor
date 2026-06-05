@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 
-# -------------------------------------------------------
+# ---------------------------------------------------------
 # Developer-only utility: permanently removes Cognitor 
 # local storage and Docker volume data. Should not be used 
 # in production or by end-users.
-# -------------------------------------------------------
+#
+# Usage:
+#
+# ./scripts/nuke_db.sh
+#
+# Optional flags:
+#
+# ./scripts/nuke_db.sh --local-only
+# ./scripts/nuke_db.sh --docker-only
+# ./scripts/nuke_db.sh --yes
+# ---------------------------------------------------------
 
 set -euo pipefail
 
