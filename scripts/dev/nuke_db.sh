@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 LOCAL_STORAGE_DIR="${ROOT_DIR}/storage"
 LOCAL_COLLECTIONS_DIR="${LOCAL_STORAGE_DIR}/collections"
@@ -16,7 +16,7 @@ ASSUME_YES=false
 
 print_help() {
     cat <<'EOF'
-Usage: scripts/nuke_db.sh [OPTIONS]
+Usage: scripts/dev/nuke_db.sh [OPTIONS]
 
 Permanently remove Cognitor database data for developer workflows.
 
@@ -51,6 +51,18 @@ detect_compose_cmd() {
         return
     fi
     echo ""
+}
+
+remove_volume_consumers() {
+    local volume_name="$1"
+    local container_ids
+
+    container_ids="$(docker ps -aq --filter "volume=${volume_name}")"
+    if [[ -n "${container_ids}" ]]; then
+        log "Removing containers attached to volume ${volume_name}"
+        # shellcheck disable=SC2086
+        docker rm -f ${container_ids} >/dev/null
+    fi
 }
 
 for arg in "$@"; do
@@ -128,6 +140,7 @@ if [[ "${DO_DOCKER}" == true ]]; then
         fi
 
         if docker volume inspect "${DOCKER_VOLUME_NAME}" >/dev/null 2>&1; then
+            remove_volume_consumers "${DOCKER_VOLUME_NAME}"
             docker volume rm -f "${DOCKER_VOLUME_NAME}" >/dev/null
             log "Removed Docker volume ${DOCKER_VOLUME_NAME}"
         else
