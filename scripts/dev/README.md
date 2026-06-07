@@ -11,12 +11,14 @@ Usage:
 ```bash
 sh scripts/dev/dev_stack.sh up
 sh scripts/dev/dev_stack.sh down
+sh scripts/dev/dev_stack.sh up --worker-branch feature/my-worker-change
 ```
 
 Notes:
 
 - Requires `docker compose`.
 - Requires `../cognitor-worker` to exist next to this repository.
+- `--worker-branch` fetches and checks out the branch in `../cognitor-worker` before building.
 
 ## `nuke_db.sh`
 
