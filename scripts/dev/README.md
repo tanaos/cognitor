@@ -12,6 +12,7 @@ Usage:
 sh scripts/dev/dev_stack.sh up
 sh scripts/dev/dev_stack.sh down
 sh scripts/dev/dev_stack.sh up --worker-branch feature/my-worker-change
+sh scripts/dev/dev_stack.sh up --build
 ```
 
 Notes:
@@ -19,6 +20,9 @@ Notes:
 - Requires `docker compose`.
 - Requires `../cognitor-worker` to exist next to this repository.
 - `--worker-branch` fetches and checks out the branch in `../cognitor-worker` before building.
+- `up` no longer forces a rebuild by default (faster startup).
+- Use `--build` to force rebuilding images when dependencies or Dockerfiles change.
+- BuildKit local caches are persisted under `.docker-cache/` and reused across runs (including after `nuke_db.sh`).
 
 ## `nuke_db.sh`
 

@@ -1,6 +1,11 @@
 services:
   cognitor:
-    build: .
+    build:
+      context: .
+      cache_from:
+        - type=local,src=.docker-cache/cognitor
+      cache_to:
+        - type=local,dest=.docker-cache/cognitor,mode=max
     container_name: cognitor
 
     ports:

@@ -3,4 +3,8 @@ services:
     build:
       context: ../cognitor-worker
       dockerfile: Dockerfile
+      cache_from:
+        - type=local,src=.docker-cache/cognitor-worker
+      cache_to:
+        - type=local,dest=.docker-cache/cognitor-worker,mode=max
     image: cognitor-worker:local

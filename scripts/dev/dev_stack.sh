@@ -2,8 +2,12 @@
 
 set -eu
 
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ROOT_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+
 ACTION="up"
 WORKER_BRANCH=""
+FORCE_BUILD=0
 
 print_help() {
 cat <<'EOF'
@@ -15,6 +19,8 @@ Actions:
 
 Options:
   --worker-branch <branch>  Fetch and checkout this branch in ../cognitor-worker before build
+	--build                   Force image rebuild (equivalent to docker compose up --build)
+	--no-build                Do not force rebuild (default)
   -h, --help                Show this help message
 EOF
 }
@@ -43,6 +49,14 @@ while [ "$#" -gt 0 ]; do
 			fi
 			WORKER_BRANCH="$2"
 			shift 2
+			;;
+		--build)
+			FORCE_BUILD=1
+			shift
+			;;
+		--no-build)
+			FORCE_BUILD=0
+			shift
 			;;
 		-h|--help)
 			print_help
@@ -81,10 +95,19 @@ case "$ACTION" in
 			)
 		fi
 
+		mkdir -p "$ROOT_DIR/.docker-cache/cognitor" "$ROOT_DIR/.docker-cache/cognitor-worker"
+		export DOCKER_BUILDKIT=1
+		export COMPOSE_DOCKER_CLI_BUILD=1
+
+		BUILD_FLAG=""
+		if [ "$FORCE_BUILD" -eq 1 ]; then
+			BUILD_FLAG="--build"
+		fi
+
 		docker compose \
 			-f docker-compose.yml \
 			-f docker-compose.worker-local.yml \
-			--profile worker up -d --build
+			--profile worker up -d $BUILD_FLAG
 		;;
 	down)
 		docker compose \
