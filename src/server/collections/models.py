@@ -36,6 +36,12 @@ class AddDocumentRequest(BaseModel):
             )
         return v
 
+
+class BulkAddDocumentRequest(BaseModel):
+    vectors: Optional[list[Vector]] = None
+    texts: list[str]
+    metadatas: list[Metadata]
+
 class UpdateDocumentRequest(BaseModel):
     metadata: Metadata
 

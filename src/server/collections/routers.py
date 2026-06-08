@@ -4,7 +4,8 @@ from fastapi import APIRouter, status, Query, Depends
 
 from .models import ListCollectionsResponse, Collection, CreateCollectionRequest, \
     AddDocumentRequest, AddDocumentResponse, DocumentResponse, UpdateDocumentRequest, \
-    ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse, AnswerPassage
+    ListDocumentsResponse, SearchRequest, SearchResponse, SearchResultResponse, AnswerPassage, \
+    BulkAddDocumentRequest
 from src.server.dependencies import (
     get_database,
     get_scheduler,
@@ -286,7 +287,7 @@ async def add_documents(
 )
 async def bulk_add_documents(
     name: str,
-    request: AddDocumentRequest,
+    request: BulkAddDocumentRequest,
     database: DatabaseDep,
     embedder_registry: EmbedderRegistryDep,
     scheduler: SchedulerDep,

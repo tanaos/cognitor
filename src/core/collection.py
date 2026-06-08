@@ -10,6 +10,7 @@ from src.core.exceptions import (
     InvalidDocumentInputError,
 )
 from src.search.filters import FilterSpec
+from src.search.engine import SearchEngine
 
 
 class Collection:
@@ -19,6 +20,11 @@ class Collection:
 
     def __init__(self, storage: CollectionStorage) -> None:
         self._storage = storage
+        self._engine = SearchEngine(
+            index=self._storage.index,
+            metadata_store=self._storage.metadata,
+            vector_store=self._storage.vectors,
+        )
         
     def add_documents(
         self, vectors: list[Vector], texts: list[str], metadatas: list[Metadata]
@@ -165,16 +171,8 @@ class Collection:
         Returns:
             List of SearchResult objects ordered by descending similarity score.
         """
-        from src.search.engine import SearchEngine
-
         if len(query_vector) != self._storage.vectors.dim:
             raise DimensionMismatchError(
                 f"query vector must have dimension {self._storage.vectors.dim}"
             )
-
-        engine = SearchEngine(
-            index=self._storage.index,
-            metadata_store=self._storage.metadata,
-            vector_store=self._storage.vectors,
-        )
-        return engine.search(query_vector, top_k, filters, include_vectors)
+        return self._engine.search(query_vector, top_k, filters, include_vectors)

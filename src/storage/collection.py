@@ -53,6 +53,11 @@ class CollectionStorage:
         index_file = Path(self.path) / INDEX_FILE
         if index_file.exists():
             self.index.load(self.path)
+            # If the persisted index lags behind vectors on disk (e.g. because
+            # we skipped per-batch index writes), rebuild once on startup.
+            vector_count = self.vectors.load_size()
+            if self.index.ntotal != vector_count:
+                self._rebuild_index()
         else:
             self._rebuild_index()
         self._index_loaded = True
@@ -112,7 +117,6 @@ class CollectionStorage:
         self.ensure_index_loaded()
         positions_arr = np.array(vector_positions, dtype=np.int64)
         self.index.add(positions_arr, vectors.astype(np.float32))
-        self.index.save(self.path)
 
         return ids
 

@@ -17,7 +17,7 @@ class FaissHNSWIndex(VectorIndex):
         dim: int,
         m: int = 32, # 16, 32, 64
         ef_construction: int = 200, # 100, 200, 400
-        ef_search: int = 50, # 32, 50, 128
+        ef_search: int = 40, # 32, 50, 128
     ) -> None:
         self.dim = dim
         # Using IndexIDMap to associate FAISS's internal vector IDs with our vector_pos IDs.
