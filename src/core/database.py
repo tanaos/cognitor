@@ -35,6 +35,7 @@ class Database:
 		"""
 		self.root_path = Path(root_path)
 		self.root_path.mkdir(parents=True, exist_ok=True)
+		self._collection_cache: dict[str, CollectionStorage] = {}
 
 	def _collection_path(self, name: str) -> Path:
 		return self.root_path / name
@@ -87,7 +88,9 @@ class Database:
 			manifest["emb_model"] = emb_model
 		manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-		return CollectionStorage(str(collection_path), dim)
+		storage = CollectionStorage(str(collection_path), dim)
+		self._collection_cache[name] = storage
+		return storage
 
 	def delete_collection(self, name: str) -> None:
 		"""
@@ -106,8 +109,9 @@ class Database:
 		for item in collection_path.iterdir():
 			item.unlink()
 		collection_path.rmdir()
+		self._collection_cache.pop(name, None)
 
-	def get_collection_ref(self, name: str) -> CollectionStorage:
+	def get_collection_ref(self, name: str, load_index: bool = True) -> CollectionStorage:
 		"""
 		Retrieve a collection object by name.
 
@@ -122,7 +126,15 @@ class Database:
 		if dim is None:
 			raise CollectionNotFoundError(name)
 
-		return CollectionStorage(str(self._collection_path(name)), dim)
+		cached = self._collection_cache.get(name)
+		if cached is not None:
+			if load_index:
+				cached.ensure_index_loaded()
+			return cached
+
+		storage = CollectionStorage(str(self._collection_path(name)), dim, load_index=load_index)
+		self._collection_cache[name] = storage
+		return storage
 
 	def get_collection_info(self, name: str) -> CollectionInfo:
 		"""
@@ -150,7 +162,7 @@ class Database:
 		"""
 		return discover_collections_info(str(self.root_path))
 
-	def get_collection_service(self, name: str) -> Collection:
+	def get_collection_service(self, name: str, load_index: bool = True) -> Collection:
 		"""
 		Get a Collection service instance for the specified collection name.
 
@@ -160,5 +172,5 @@ class Database:
 		Returns:
 			Collection service instance bound to the requested collection.
 		"""
-		storage = self.get_collection_ref(name)
+		storage = self.get_collection_ref(name, load_index=load_index)
 		return Collection(storage)

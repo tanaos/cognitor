@@ -71,6 +71,7 @@ class Collection:
         self,
         offset: int = 0,
         limit: int = 50,
+        include_vectors: bool = True,
     ) -> list[Document]:
         """
         List non-deleted documents in insertion order using offset/limit pagination.
@@ -90,6 +91,17 @@ class Collection:
         live_docs = self._storage.metadata.list_live(offset, limit)
         if not live_docs:
             return []
+
+        if not include_vectors:
+            return [
+                Document(
+                    id=doc.id,
+                    vector=[],
+                    text=doc.text,
+                    metadata=doc.metadata,
+                )
+                for doc in live_docs
+            ]
 
         self._storage.vectors.open("r")
         if self._storage.vectors.vectors is None:

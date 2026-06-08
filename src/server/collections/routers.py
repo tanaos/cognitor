@@ -16,7 +16,7 @@ from src.server.dependencies import (
     get_telemetry_client,
 )
 from src.core.database import Database
-from src.execution.batching import batch_add_documents
+from src.execution.async_tasks import bulk_ingest
 from src.execution.scheduler import CompactionScheduler
 from src.embeddings.registry import EmbedderRegistry
 from src.config.settings import Config
@@ -314,17 +314,16 @@ async def bulk_add_documents(
         embedder = embedder_registry.get(coll_info.emb_model)
 
     collection = database.get_collection_service(name)
-    async with scheduler.get_collection_lock(str(database.root_path / name)):
-        document_ids = await run_sync(
-            lambda: batch_add_documents(
-                collection=collection,
-                texts=request.texts,
-                metadatas=request.metadatas,
-                vectors=request.vectors,
-                embedder=embedder,
-                batch_size=batch_size,
-            )
-        )
+    document_ids = await bulk_ingest(
+        collection=collection,
+        lock_key=str(database.root_path / name),
+        scheduler=scheduler,
+        texts=request.texts,
+        metadatas=request.metadatas,
+        vectors=request.vectors,
+        embedder=embedder,
+        batch_size=batch_size,
+    )
     telemetry.enqueue(DocumentsAdded(
         count=len(document_ids),
         used_embedding=used_embedding,
@@ -352,25 +351,26 @@ async def bulk_add_documents(
 async def list_documents(
     name: str,
     database: DatabaseDep,
-    scheduler: SchedulerDep,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=1000),
+    include_vectors: bool = Query(default=False),
 ) -> ListDocumentsResponse:
     """
     Retrieve paginated documents from the specified collection.
     """
-    coll_info = database.get_collection_info(name)
-    collection = database.get_collection_service(name)
-
-    async with scheduler.get_collection_lock(str(database.root_path / name)):
-        docs = collection.list_documents(offset=offset, limit=limit)
+    collection = database.get_collection_service(name, load_index=False)
+    docs = collection.list_documents(
+        offset=offset,
+        limit=limit,
+        include_vectors=include_vectors,
+    )
     documents = [
         DocumentResponse(id=doc.id, vector=doc.vector, text=doc.text, metadata=doc.metadata)
         for doc in docs
     ]
     return ListDocumentsResponse(
         documents=documents,
-        total=coll_info.doc_count,
+        total=database.get_collection_info(name).doc_count,
         offset=offset,
         limit=limit,
     )

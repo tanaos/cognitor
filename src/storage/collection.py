@@ -17,7 +17,7 @@ class CollectionStorage:
     Manages storage-level operations on vectors and their associated metadata.
     """
 
-    def __init__(self, path: str, dim: int) -> None:
+    def __init__(self, path: str, dim: int, load_index: bool = True) -> None:
         """
         Initialize the collection storage.
         
@@ -39,11 +39,23 @@ class CollectionStorage:
         # overwrite all previously stored vectors.
         self.vectors.size = self.vectors.load_size()
         self.index: FaissHNSWIndex = FaissHNSWIndex(dim)
-        index_file = Path(path) / INDEX_FILE
+        self._index_loaded = False
+        if load_index:
+            self.ensure_index_loaded()
+
+    def ensure_index_loaded(self) -> None:
+        """
+        Load the persisted index (or rebuild it) on first use.
+        """
+        if self._index_loaded:
+            return
+
+        index_file = Path(self.path) / INDEX_FILE
         if index_file.exists():
-            self.index.load(path)
+            self.index.load(self.path)
         else:
             self._rebuild_index()
+        self._index_loaded = True
 
     def _rebuild_index(self) -> None:
         """
@@ -97,6 +109,7 @@ class CollectionStorage:
         self.metadata.insert_batch(ids, vector_positions, texts, metadatas)
         self.wal.log_add_committed(seq, vector_offset=vector_start, count=n)
 
+        self.ensure_index_loaded()
         positions_arr = np.array(vector_positions, dtype=np.int64)
         self.index.add(positions_arr, vectors.astype(np.float32))
         self.index.save(self.path)
