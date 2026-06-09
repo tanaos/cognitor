@@ -1,0 +1,149 @@
+{
+  "benchmark": "BEIR end-to-end retrieval (multi-target)",
+  "dataset": "scifact",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "top_k": 10,
+  "corpus_size": 5183,
+  "query_count": 300,
+  "targets": [
+    "cognitor",
+    "qdrant",
+    "weaviate",
+    "chroma"
+  ],
+  "results": [
+    {
+      "target": "cognitor",
+      "corpus_size": 5183,
+      "query_count": 300,
+      "ingest_seconds": 2.944303274001868,
+      "ingest_docs_per_s": 1760.348550288883,
+      "query_qps": 96.4784242504019,
+      "query_p50_ms": 10.45336899915128,
+      "query_p95_ms": 11.72475909916102,
+      "query_p99_ms": 12.269961826896175,
+      "quality": {
+        "nDCG@10": 0.6485370403210431,
+        "MAP@10": 0.5986865079365079,
+        "MRR@10": 0.6047843915343915,
+        "Recall@10": 0.7833333333333333
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 38,
+        "quality": {
+          "nDCG@10": 0.8558873424812061,
+          "MAP@10": 0.8333333333333333,
+          "MRR@10": 0.8333333333333333,
+          "Recall@10": 0.9210526315789473
+        },
+        "query_qps": 93.33662605131997,
+        "query_p50_ms": 10.762121000880143,
+        "query_p95_ms": 11.944652950842283,
+        "query_p99_ms": 12.736388993653238,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "qdrant",
+      "corpus_size": 5183,
+      "query_count": 300,
+      "ingest_seconds": 1.7443993740016595,
+      "ingest_docs_per_s": 2971.223263002082,
+      "query_qps": 323.25648445915954,
+      "query_p50_ms": 2.9590850026579574,
+      "query_p95_ms": 4.12573524772597,
+      "query_p99_ms": 4.772228840083697,
+      "quality": {
+        "nDCG@10": 0.6484774787992178,
+        "MAP@10": 0.5986269841269841,
+        "MRR@10": 0.6047248677248678,
+        "Recall@10": 0.7833333333333333
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 38,
+        "quality": {
+          "nDCG@10": 0.8717960188786696,
+          "MAP@10": 0.8392543859649123,
+          "MRR@10": 0.8392543859649123,
+          "Recall@10": 0.9736842105263158
+        },
+        "query_qps": 110.40516949077218,
+        "query_p50_ms": 9.29650599937304,
+        "query_p95_ms": 10.58643514988944,
+        "query_p99_ms": 10.996347596228588,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "weaviate",
+      "corpus_size": 5183,
+      "query_count": 300,
+      "ingest_seconds": 4.947985245999007,
+      "ingest_docs_per_s": 1047.497060382512,
+      "query_qps": 214.53296781518262,
+      "query_p50_ms": 4.44978849918698,
+      "query_p95_ms": 6.249956997271511,
+      "query_p99_ms": 9.517147298902245,
+      "quality": {
+        "nDCG@10": 0.6484774787992178,
+        "MAP@10": 0.5986269841269841,
+        "MRR@10": 0.6047248677248678,
+        "Recall@10": 0.7833333333333333
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 38,
+        "quality": {
+          "nDCG@10": 0.8717960188786696,
+          "MAP@10": 0.8392543859649123,
+          "MRR@10": 0.8392543859649123,
+          "Recall@10": 0.9736842105263158
+        },
+        "query_qps": 255.3511110281547,
+        "query_p50_ms": 3.6964329992770217,
+        "query_p95_ms": 5.329689496647916,
+        "query_p99_ms": 5.61017996944429,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "chroma",
+      "corpus_size": 5183,
+      "query_count": 300,
+      "ingest_seconds": 4.632609565996972,
+      "ingest_docs_per_s": 1118.8078611335725,
+      "query_qps": 637.7864611981855,
+      "query_p50_ms": 1.3800365013594273,
+      "query_p95_ms": 2.477145796365222,
+      "query_p99_ms": 2.887076758488547,
+      "quality": {
+        "nDCG@10": 0.6484774787992178,
+        "MAP@10": 0.5986269841269841,
+        "MRR@10": 0.6047248677248678,
+        "Recall@10": 0.7833333333333333
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 38,
+        "quality": {
+          "nDCG@10": 0.8717960188786696,
+          "MAP@10": 0.8392543859649123,
+          "MRR@10": 0.8392543859649123,
+          "Recall@10": 0.9736842105263158
+        },
+        "query_qps": 145.48829705625056,
+        "query_p50_ms": 6.834023501141928,
+        "query_p95_ms": 8.308017498711704,
+        "query_p99_ms": 9.263850339848432,
+        "filter_correctness": 1.0
+      }
+    }
+  ],
+  "failed": []
+}

@@ -1,0 +1,149 @@
+{
+  "benchmark": "BEIR end-to-end retrieval (multi-target)",
+  "dataset": "scifact",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "top_k": 10,
+  "corpus_size": 1000,
+  "query_count": 80,
+  "targets": [
+    "cognitor",
+    "qdrant",
+    "weaviate",
+    "chroma"
+  ],
+  "results": [
+    {
+      "target": "cognitor",
+      "corpus_size": 1000,
+      "query_count": 80,
+      "ingest_seconds": 0.5410838789975969,
+      "ingest_docs_per_s": 1848.1422914550394,
+      "query_qps": 145.58685531655902,
+      "query_p50_ms": 6.748306001099991,
+      "query_p95_ms": 8.050299545720918,
+      "query_p99_ms": 8.491218308699896,
+      "quality": {
+        "nDCG@10": 0.8351767777551629,
+        "MAP@10": 0.8077589285714286,
+        "MRR@10": 0.8100148809523808,
+        "Recall@10": 0.9125
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 10,
+        "quality": {
+          "nDCG@10": 0.9630929753571458,
+          "MAP@10": 0.95,
+          "MRR@10": 0.95,
+          "Recall@10": 1.0
+        },
+        "query_qps": 139.12638147218232,
+        "query_p50_ms": 7.003262002399424,
+        "query_p95_ms": 8.193775051404371,
+        "query_p99_ms": 8.556047012170893,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "qdrant",
+      "corpus_size": 1000,
+      "query_count": 80,
+      "ingest_seconds": 0.3469671909988392,
+      "ingest_docs_per_s": 2882.1168858105248,
+      "query_qps": 336.62705377709597,
+      "query_p50_ms": 2.8470395009208005,
+      "query_p95_ms": 3.853991146024782,
+      "query_p99_ms": 4.453202869408412,
+      "quality": {
+        "nDCG@10": 0.8351767777551629,
+        "MAP@10": 0.8077589285714286,
+        "MRR@10": 0.8100148809523808,
+        "Recall@10": 0.9125
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 10,
+        "quality": {
+          "nDCG@10": 0.9630929753571458,
+          "MAP@10": 0.95,
+          "MRR@10": 0.95,
+          "Recall@10": 1.0
+        },
+        "query_qps": 207.76844995011916,
+        "query_p50_ms": 4.689052497269586,
+        "query_p95_ms": 5.508052048026002,
+        "query_p99_ms": 5.513945607744972,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "weaviate",
+      "corpus_size": 1000,
+      "query_count": 80,
+      "ingest_seconds": 0.9336708040063968,
+      "ingest_docs_per_s": 1071.0413088949376,
+      "query_qps": 232.88509735225355,
+      "query_p50_ms": 4.141765501117334,
+      "query_p95_ms": 5.249547499261098,
+      "query_p99_ms": 7.341565546594197,
+      "quality": {
+        "nDCG@10": 0.8351767777551629,
+        "MAP@10": 0.8077589285714286,
+        "MRR@10": 0.8100148809523808,
+        "Recall@10": 0.9125
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 10,
+        "quality": {
+          "nDCG@10": 0.9630929753571458,
+          "MAP@10": 0.95,
+          "MRR@10": 0.95,
+          "Recall@10": 1.0
+        },
+        "query_qps": 245.73982980497297,
+        "query_p50_ms": 4.062866497406503,
+        "query_p95_ms": 4.427063447292312,
+        "query_p99_ms": 4.529490285713109,
+        "filter_correctness": 1.0
+      }
+    },
+    {
+      "target": "chroma",
+      "corpus_size": 1000,
+      "query_count": 80,
+      "ingest_seconds": 0.9093877850027638,
+      "ingest_docs_per_s": 1099.6408974164533,
+      "query_qps": 579.534844047597,
+      "query_p50_ms": 1.542754500405863,
+      "query_p95_ms": 2.922790453521884,
+      "query_p99_ms": 3.349571611397549,
+      "quality": {
+        "nDCG@10": 0.8351767777551629,
+        "MAP@10": 0.8077589285714286,
+        "MRR@10": 0.8100148809523808,
+        "Recall@10": 0.9125
+      },
+      "metadata_filter_track": {
+        "enabled": true,
+        "groups": 8,
+        "query_count_evaluated": 10,
+        "quality": {
+          "nDCG@10": 0.9630929753571458,
+          "MAP@10": 0.95,
+          "MRR@10": 0.95,
+          "Recall@10": 1.0
+        },
+        "query_qps": 270.6846225328515,
+        "query_p50_ms": 3.322790002130205,
+        "query_p95_ms": 6.1988257501070585,
+        "query_p99_ms": 7.568613148541773,
+        "filter_correctness": 1.0
+      }
+    }
+  ],
+  "failed": []
+}

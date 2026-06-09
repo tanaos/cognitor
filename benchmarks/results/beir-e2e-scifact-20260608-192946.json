@@ -1,0 +1,38 @@
+{
+  "benchmark": "BEIR end-to-end retrieval",
+  "dataset": "scifact",
+  "collection": "beir_benchmark_collection",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "query_mode": "query_vector",
+  "corpus_size": 600,
+  "query_count": 40,
+  "top_k": 10,
+  "ingest_seconds": 18.78539148800337,
+  "ingest_docs_per_s": 31.93971232290628,
+  "query_qps": 177.79661551517643,
+  "query_p50_ms": 5.49222650079173,
+  "query_p95_ms": 6.629694450748502,
+  "query_p99_ms": 7.0701059333077865,
+  "quality": {
+    "nDCG@10": 0.8988467328022984,
+    "MAP@10": 0.8902380952380952,
+    "MRR@10": 0.8910714285714285,
+    "Recall@10": 0.925
+  },
+  "metadata_filter_track": {
+    "enabled": true,
+    "groups": 8,
+    "query_count_evaluated": 7,
+    "quality": {
+      "nDCG@10": 1.0,
+      "MAP@10": 1.0,
+      "MRR@10": 1.0,
+      "Recall@10": 1.0
+    },
+    "query_qps": 170.80024412094116,
+    "query_p50_ms": 5.662359995767474,
+    "query_p95_ms": 6.757311098772334,
+    "query_p99_ms": 6.866514219582314,
+    "filter_correctness": 1.0
+  }
+}
