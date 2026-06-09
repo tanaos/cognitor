@@ -29,11 +29,11 @@ services:
         - CMD
         - python
         - -c
-        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:7530/', timeout=3)
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 10s
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:7530/health/ready', timeout=10)
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
     restart: unless-stopped
 
