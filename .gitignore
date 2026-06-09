@@ -26,3 +26,6 @@ storage/
 
 # Logs
 logs/
+
+# Docker cache
+.docker-cache/

@@ -7,7 +7,7 @@ ROOT_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 ACTION="up"
 WORKER_BRANCH=""
-FORCE_BUILD=0
+FORCE_BUILD=1
 
 print_help() {
 cat <<'EOF'
@@ -19,8 +19,8 @@ Actions:
 
 Options:
   --worker-branch <branch>  Fetch and checkout this branch in ../cognitor-worker before build
-	--build                   Force image rebuild (equivalent to docker compose up --build)
-	--no-build                Do not force rebuild (default)
+	--build                   Force image rebuild (default)
+	--no-build                Skip rebuild and reuse existing images
   -h, --help                Show this help message
 EOF
 }
