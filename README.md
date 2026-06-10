@@ -49,7 +49,7 @@ Once the search platform's `GET /health/ready` endpoint returns `"ready"` (indic
 > [!NOTE]
 > Check out the [worker repository](https://github.com/tanaos/cognitor-worker) to see which file types are currently supported (we will be adding more soon). Keep in mind that file types that are not supported will be ignored by the worker, but you can still index their content manually through the API.
 
-Once the search platform is running, you can interact with its REST API through the [Swagger UI](http://localhost:7530/docs), the [Python](https://github.com/tanaos/cognitor-python) or [TypeScript](https://github.com/tanaos/cognitor-typescript) SDKs, or directly through HTTP requests.
+You can interact with the search platform's REST API through the [Swagger UI](http://localhost:7530/docs), the [Python](https://github.com/tanaos/cognitor-python) or [TypeScript](https://github.com/tanaos/cognitor-typescript) SDKs, or directly through HTTP requests.
 
 Stop both the search platform and the worker with
 
