@@ -63,7 +63,7 @@ If you prefer to index documents manually through the API instead of using the w
 docker compose up -d
 ```
 
-Keep in mind that in this case, document batching, embedding and indexing will not happen automatically, and you will need to handle that yourself (e.g. by using the SDKs or implementing your own background process).
+Keep in mind that in this case, document chunking, embedding and indexing will not happen automatically, and you will need to handle that yourself (e.g. by using the SDKs or implementing your own background process).
 
 Stop the search platform with:
 
