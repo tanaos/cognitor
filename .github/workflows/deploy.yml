@@ -65,18 +65,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy release
+      - name: Deploy to Server
         run: |
-          ssh "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << EOF
+          ssh "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'EOF'
+            # Exit immediately if a command exits with a non-zero status
             set -e
-
-            docker pull ${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }}
-
-            docker stop cognitor || true
-            docker rm cognitor || true
-
-            docker run -d \
-              --name cognitor \
-              --restart unless-stopped \
-              ${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }}
+            cd "${{ secrets.SERVER_APP_PATH }}"
+            git stash && git stash clear
+            git pull origin master
+            uv sync
+            sudo systemctl restart cognitor
           EOF
