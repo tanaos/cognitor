@@ -42,7 +42,12 @@ Start both the search platform and the worker with
 docker compose --profile worker up -d
 ```
 
-The API documentation is available at `http://localhost:7530/docs`. Interact with it through the [Python SDK](https://github.com/tanaos/cognitor-python), the [Typescript SDK](https://github.com/tanaos/cognitor-typescript) or any HTTP client of your choice.
+The worker will then automatically start indexing the content of the specified folder and keep it up to date with any changes. Use `docker logs cognitor-worker` to check the indexing status and see which files have been processed.
+
+> [!NOTE]
+> Check out the [worker repository](https://github.com/tanaos/cognitor-worker) to see which file types are currently supported (we will be adding more soon). Keep in mind that file types that are not supported will be ignored by the worker, but you can still index their content manually through the API.
+
+Once the search platform is running, you can interact with its REST API through the [Swagger UI](http://localhost:7530/docs), the [Python](https://github.com/tanaos/cognitor-python) or [TypeScript](https://github.com/tanaos/cognitor-typescript) SDKs, or directly through HTTP requests.
 
 Stop both the search platform and the worker with
 
@@ -52,13 +57,15 @@ docker compose --profile worker down --remove-orphans
 
 ### Use the search platform only
 
-If you just want to use the search platform without the worker, you can start it with:
+If you prefer to index documents manually through the API instead of using the worker, you can simply start the search platform without the worker:
 
 ```bash
 docker compose up -d
 ```
 
-Stop it with:
+Keep in mind that in this case, document batching, embedding and indexing will not happen automatically, and you will need to handle that yourself (e.g. by using the SDKs or implementing your own background process).
+
+Stop the search platform with:
 
 ```
 docker compose down
@@ -66,7 +73,7 @@ docker compose down
 
 ### Integrate with your applications
 
-When the docker container is running, Cognitor exposes a REST API at `http://localhost:7530` which you can use to query the indexed data, manage collections and index more documents. You can visit the Swagger UI at `http://localhost:7530/docs`. We provide client libraries for
+When its docker container is running, Cognitor exposes a REST API at [`http://localhost:7530`](http://localhost:7530) which you can use to query the indexed data, manage collections and index more documents. You can visit the Swagger UI at [`http://localhost:7530/docs`](http://localhost:7530/docs). We provide client libraries for
 
 - [Python](https://github.com/tanaos/cognitor-python)
 - [TypeScript](https://github.com/tanaos/cognitor-typescript)
