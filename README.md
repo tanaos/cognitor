@@ -100,6 +100,8 @@ with Cognitor("http://localhost:7530", api_key="your-api-key") as client:
     print(response)
 ```
 
+See the [Python SDK page](https://github.com/tanaos/cognitor-python) for more examples and documentation.
+
 ## No data? No problem.
 
 If you don't have your own data to test with, you can use the included script to seed the database with a sample e-commerce products collection:
