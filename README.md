@@ -4,6 +4,8 @@
     </a>
 </p>
 
+# Cognitor
+
 Cognitor is an open-source semantic search platform which automatically chunks, embeds and indexes the entire content of a target folder (and its subfolders), making it easily searchable by both AI agents and humans. It provides a simple API to query the indexed data via natural language, and can be used as a standalone semantic search engine or as a backend for your applications.
 
 Cognitor runs in a Docker container, making it easy to use and deploy on any system, including your local machine for maximum privacy and control over your data.
@@ -42,7 +44,7 @@ Start both the search platform and the worker with
 docker compose --profile worker up -d
 ```
 
-The worker will then automatically start indexing the content of the specified folder and keep it up to date with any changes. Use `docker logs cognitor-worker` to check the indexing status and see which files have been processed.
+Once the search platform's `GET /health/ready` endpoint returns `"ready"` (indicating that the initial setup is complete), the worker will automatically start indexing the content of the specified folder and keep it up to date with any changes. Use `docker logs cognitor-worker` to check the indexing status and see which files have been processed.
 
 > [!NOTE]
 > Check out the [worker repository](https://github.com/tanaos/cognitor-worker) to see which file types are currently supported (we will be adding more soon). Keep in mind that file types that are not supported will be ignored by the worker, but you can still index their content manually through the API.
