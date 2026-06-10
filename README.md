@@ -1,12 +1,12 @@
 <p align="center">
     <a href="https://github.com/tanaos/cognitor">
-        <img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" width="400px" alt="Cognitor | All-in-one semantic search platform for AI and humans.">
+        <img src="https://raw.githubusercontent.com/tanaos/cognitor/master/assets/hero.png" width="400px" alt="Cognitor | All-in-one semantic search engine for AI and humans.">
     </a>
 </p>
 
 # Cognitor
 
-Cognitor is an open-source semantic search platform which automatically chunks, embeds and indexes the entire content of a target folder (and its subfolders), making it easily searchable by both AI agents and humans. It provides a simple API to query the indexed data via natural language, and can be used as a standalone semantic search engine or as a backend for your applications.
+Cognitor is an open-source semantic search engine and vector database which automatically chunks, embeds and indexes the entire content of a target folder (and its subfolders), making it easily searchable by both AI agents and humans. It provides a simple API to query the indexed data via natural language, and can be used as a standalone semantic search engine, a vector database, or as a backend for your applications.
 
 Cognitor runs in a Docker container, making it easy to use and deploy on any system, including your local machine for maximum privacy and control over your data.
 
@@ -14,7 +14,7 @@ Cognitor runs in a Docker container, making it easy to use and deploy on any sys
 
 Cognitor consists of two main components:
 
-- **Search platform** (this repository): a vector database which stores document embeddings, full text and metadata, and provides a simple REST API to query the indexed information.
+- **Search engine** (this repository): a vector database which stores document embeddings, full text and metadata, and provides a simple REST API to query the indexed information.
 - **[Worker](https://github.com/tanaos/cognitor-worker)**: a background process that monitors a specified folder for changes, automatically chunks and embeds the content of the files, and updates the vector database accordingly.
 
 ## How to use
@@ -24,7 +24,7 @@ Similarly to other vector databases, Cognitor organizes data into *documents* an
 - ***document***: a piece of content that you want to be searchable. It usually corresponds to a chunk of text extracted from a file (not the entire file). Each chunk extracted by the worker is stored as a separate document in the database, along with its embedding and metadata.
 - ***collection***: a group of related documents. Collections help organize and manage your data within Cognitor. Think of a collection as a table in a traditional database, or as a folder in a file system.
 
-### Use search platform + worker
+### Use search engine + worker
 
 Configure the following environment variables in your `.env` file (at the root of the project):
 
@@ -38,28 +38,28 @@ DOCS_FOLDER=/path/to/your/docs
 COGNITOR_COLLECTION_NAME=cognitor-worker-documents
 ```
 
-Start both the search platform and the worker with
+Start both the search engine and the worker with
 
 ```bash
 docker compose --profile worker up -d
 ```
 
-Once the search platform's `GET /health/ready` endpoint returns `"ready"` (indicating that the initial setup is complete), the worker will automatically start indexing the content of the specified folder and keep it up to date with any changes. Use `docker logs cognitor-worker` to check the indexing status and see which files have been processed.
+Once the search engine's `GET /health/ready` endpoint returns `"ready"` (indicating that the initial setup is complete), the worker will automatically start indexing the content of the specified folder and keep it up to date with any changes. Use `docker logs cognitor-worker` to check the indexing status and see which files have been processed.
 
 > [!NOTE]
 > Check out the [worker repository](https://github.com/tanaos/cognitor-worker) to see which file types are currently supported (we will be adding more soon). Keep in mind that file types that are not supported will be ignored by the worker, but you can still index their content manually through the API.
 
-You can interact with the search platform's REST API through the [Swagger UI](http://localhost:7530/docs), the [Python](https://github.com/tanaos/cognitor-python) or [TypeScript](https://github.com/tanaos/cognitor-typescript) SDKs, or directly through HTTP requests.
+You can interact with the search engine's REST API through the [Swagger UI](http://localhost:7530/docs), the [Python](https://github.com/tanaos/cognitor-python) or [TypeScript](https://github.com/tanaos/cognitor-typescript) SDKs, or directly through HTTP requests.
 
-Stop both the search platform and the worker with
+Stop both the search engine and the worker with
 
 ```bash
 docker compose --profile worker down --remove-orphans
 ```
 
-### Use the search platform only
+### Use the search engine only
 
-If you prefer to index documents manually through the API instead of using the worker, you can simply start the search platform without the worker:
+If you prefer to index documents manually through the API instead of using the worker, you can simply start the search engine without the worker:
 
 ```bash
 docker compose up -d
@@ -67,7 +67,7 @@ docker compose up -d
 
 Keep in mind that in this case, document chunking, embedding and indexing will not happen automatically, and you will need to handle that yourself (e.g. by using the SDKs or implementing your own background process).
 
-Stop the search platform with:
+Stop the search engine with:
 
 ```
 docker compose down
@@ -94,7 +94,7 @@ Use it in your code:
 from cognitor import Cognitor
 
 with Cognitor("http://localhost:7530", api_key="your-api-key") as client:
-    # Check if the search platform is ready to accept requests
+    # Check if the search engine is ready to accept requests
     print(client.health_ready())  # "ready" or "loading"
 
     # Search by text query
