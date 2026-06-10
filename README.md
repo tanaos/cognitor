@@ -21,7 +21,7 @@ Cognitor consists of two main components:
 
 Similarly to other vector databases, Cognitor organizes data into *documents* and *collections*.
 
-- ***document***: a piece of content that you want to be searchable. It usually corresponds to a chunk of text extracted from a file (not the entire file).
+- ***document***: a piece of content that you want to be searchable. It usually corresponds to a chunk of text extracted from a file (not the entire file). Each chunk extracted by the worker is stored as a separate document in the database, along with its embedding and metadata.
 - ***collection***: a group of related documents. Collections help organize and manage your data within Cognitor. Think of a collection as a table in a traditional database, or as a folder in a file system.
 
 ### Use search platform + worker
