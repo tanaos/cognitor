@@ -17,6 +17,13 @@ Cognitor consists of two main components:
 - **Search engine** (this repository): a vector database which stores document embeddings, full text and metadata, and provides a simple REST API to query the indexed information.
 - **[Worker](https://github.com/tanaos/cognitor-worker)**: a background process that monitors a specified folder for changes, automatically chunks and embeds the content of the files, and updates the vector database accordingly.
 
+## Clone the repo
+
+```bash
+git clone https://github.com/tanaos/cognitor.git
+cd cognitor
+```
+
 ## How to use
 
 Similarly to other vector databases, Cognitor organizes data into *documents* and *collections*.
