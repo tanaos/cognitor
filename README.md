@@ -100,7 +100,7 @@ Use it in your code:
 ```python
 from cognitor import Cognitor
 
-with Cognitor("http://localhost:7530", api_key="your-api-key") as client:
+with Cognitor("http://localhost:7530") as client:
     # Check if the search engine is ready to accept requests
     print(client.health_ready())  # "ready" or "loading"
 
