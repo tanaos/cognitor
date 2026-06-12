@@ -1,7 +1,71 @@
 import logging
 import logging.config
 import os
-from typing import Dict, Any
+from typing import Any, Dict
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+HTTP_LOGGER_PREFIXES = (
+    "httpx",
+    "httpcore",
+    "urllib3",
+    "aiohttp",
+    "uvicorn.access",
+)
+
+_HTTP_INFO_ENABLED = False
+
+
+class LoggingSettings(BaseSettings):
+    LOG_LEVEL: str = "INFO"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="",
+        extra="ignore",
+    )
+
+
+def _resolve_log_level() -> int:
+    level_name = LoggingSettings().LOG_LEVEL.strip().upper()
+    return getattr(logging, level_name, logging.INFO)
+
+
+def _build_logging_config(log_level: int) -> Dict[str, Any]:
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "filters": {
+            "http_info_to_debug": {
+                "()": HttpInfoToDebugFilter,
+            }
+        },
+        "formatters": {
+            "default": {
+                "()": ConditionalFormatter,
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            }
+        },
+        "handlers": {
+            "console": {
+                "formatter": "default",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+                "level": log_level,
+                "filters": ["http_info_to_debug"],
+            },
+        },
+        "root": {"handlers": ["console"], "level": log_level},
+        "loggers": {
+            "gunicorn": {"propagate": True},
+            "gunicorn.access": {"propagate": True},
+            "gunicorn.error": {"propagate": True},
+            "uvicorn": {"propagate": True},
+            "uvicorn.access": {"propagate": True},
+            "uvicorn.error": {"propagate": True},
+        },
+    }
 
 
 class ConditionalFormatter(logging.Formatter):
@@ -31,34 +95,24 @@ class ConditionalFormatter(logging.Formatter):
         
         return f"{self.formatTime(record)} | [{record.levelname}]{tag_segment} | {record.getMessage()}"
 
-LOGGING_CONFIG: Dict[str, Any] = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {
-            "()": ConditionalFormatter,
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
-    },
-    "handlers": {
-        "console": {
-            "formatter": "default",
-            "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
-            "level": "INFO",
-        },
-    },
-    "root": {"handlers": ["console"], "level": "INFO"},
-    "loggers": {
-        "gunicorn": {"propagate": True},
-        "gunicorn.access": {"propagate": True},
-        "gunicorn.error": {"propagate": True},
-        "uvicorn": {"propagate": True},
-        "uvicorn.access": {"propagate": True},
-        "uvicorn.error": {"propagate": True},
-    },
-}
+
+class HttpInfoToDebugFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if _HTTP_INFO_ENABLED:
+            return True
+
+        if record.levelno == logging.INFO and any(
+            record.name.startswith(prefix) for prefix in HTTP_LOGGER_PREFIXES
+        ):
+            return False
+
+        return True
 
 def setup_logging():
+    global _HTTP_INFO_ENABLED
+
+    log_level = _resolve_log_level()
+    _HTTP_INFO_ENABLED = log_level <= logging.DEBUG
+
     os.makedirs("logs", exist_ok=True)
-    logging.config.dictConfig(LOGGING_CONFIG)
+    logging.config.dictConfig(_build_logging_config(log_level))
